@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import GlassCard from '../components/GlassCard.jsx';
 import { useToast } from '../components/ToastContext.jsx';
-import { API_BASE, deleteWorkspaceEntry, fetchWorkspace } from '../lib/apiClient.js';
+import { useTheme } from '../context/ThemeContext.jsx';
+import { API_BASE, deleteWorkspaceEntry, fetchWorkspace, updateWorkspaceScript } from '../lib/apiClient.js';
 
 const typeMetadata = {
   download: {
@@ -28,8 +29,14 @@ function formatDate(value) {
 
 export default function WorkspacePage() {
   const { addToast } = useToast();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editScriptText, setEditScriptText] = useState('');
+  const [savingScriptId, setSavingScriptId] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -57,10 +64,85 @@ export default function WorkspacePage() {
     }));
   }, [items]);
 
+  const editorInputClasses = [
+    'min-h-[160px] w-full rounded-2xl border px-4 py-3 text-sm shadow-inner focus:outline-none focus:ring-2',
+    isDark
+      ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
+      : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
+  ].join(' ');
+
+  const togglePreview = (entry) => {
+    setExpandedId((prev) => {
+      const next = prev === entry.id ? null : entry.id;
+      if (prev === entry.id) {
+        setEditingId(null);
+        setEditScriptText('');
+      }
+      return next;
+    });
+  };
+
+  const handleCopyScript = (content) => {
+    if (!content) {
+      addToast('No script text to copy.', 'error');
+      return;
+    }
+    if (!navigator.clipboard) {
+      addToast('Clipboard is not available in this environment.', 'error');
+      return;
+    }
+    navigator.clipboard
+      .writeText(content)
+      .then(() => addToast('Script copied to clipboard.'))
+      .catch(() => addToast('Unable to copy script.', 'error'));
+  };
+
+  const startEditingScript = (entry) => {
+    if (savingScriptId === entry.id) {
+      return;
+    }
+    if (editingId === entry.id) {
+      setEditingId(null);
+      setEditScriptText('');
+      return;
+    }
+    setExpandedId(entry.id);
+    setEditingId(entry.id);
+    setEditScriptText(entry.script || '');
+  };
+
+  const handleScriptUpdate = async (entry) => {
+    const trimmed = editScriptText.trim();
+    if (!trimmed) {
+      addToast('Script text cannot be empty.', 'error');
+      return;
+    }
+    setSavingScriptId(entry.id);
+    try {
+      const updated = await updateWorkspaceScript({
+        id: entry.id,
+        script: trimmed,
+      });
+      setItems((prev) =>
+        prev.map((item) => (item.id === entry.id ? { ...item, ...updated } : item))
+      );
+      setEditingId(null);
+      setEditScriptText('');
+      addToast('Script updated.');
+    } catch (error) {
+      addToast(error.message || 'Unable to update script.', 'error');
+    } finally {
+      setSavingScriptId(null);
+    }
+  };
+
   const handleRemove = async (id) => {
     try {
       await deleteWorkspaceEntry(id);
       setItems((prev) => prev.filter((entry) => entry.id !== id));
+      setExpandedId((prev) => (prev === id ? null : prev));
+      setEditingId((prev) => (prev === id ? null : prev));
+      setEditScriptText('');
       addToast('Removed from workspace.');
     } catch (error) {
       addToast(error.message || 'Unable to remove asset.', 'error');
@@ -105,6 +187,11 @@ export default function WorkspacePage() {
           <div className="space-y-4">
             {items.map((entry) => {
               const meta = typeMetadata[entry.type || 'download'] || typeMetadata.download;
+              const isScript = (entry.type || 'download') === 'script';
+              const scriptContent = entry.script || '';
+              const isExpanded = expandedId === entry.id;
+              const isEditing = editingId === entry.id;
+
               return (
                 <div
                   key={entry.id}
@@ -121,6 +208,32 @@ export default function WorkspacePage() {
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                      {isScript && (
+                        <>
+                          <button
+                            type="button"
+                            className="liquid-button text-xs"
+                            onClick={() => togglePreview(entry)}
+                          >
+                            {isExpanded ? 'Hide Script' : 'Preview Script'}
+                          </button>
+                          <button
+                            type="button"
+                            className="liquid-button text-xs"
+                            onClick={() => handleCopyScript(scriptContent)}
+                            disabled={!scriptContent}
+                          >
+                            Copy Script
+                          </button>
+                          <button
+                            type="button"
+                            className="liquid-button text-xs"
+                            onClick={() => startEditingScript(entry)}
+                          >
+                            {isEditing ? 'Cancel Edit' : 'Edit Script'}
+                          </button>
+                        </>
+                      )}
                       {entry.file_url && (
                         <a
                           href={`${API_BASE}${entry.file_url}`}
@@ -145,9 +258,46 @@ export default function WorkspacePage() {
                     </div>
                   ) : null}
                   {entry.url && (
-                    <p className="text-xs theme-text-muted break-words">
+                    <p className="break-words text-xs theme-text-muted">
                       Source: <span className="theme-text-primary">{entry.url}</span>
                     </p>
+                  )}
+                  {isScript && isExpanded && (
+                    <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
+                      {isEditing ? (
+                        <>
+                          <textarea
+                            className={editorInputClasses}
+                            value={editScriptText}
+                            onChange={(event) => setEditScriptText(event.target.value)}
+                          />
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className="liquid-button text-xs"
+                              onClick={() => handleScriptUpdate(entry)}
+                              disabled={savingScriptId === entry.id}
+                            >
+                              {savingScriptId === entry.id ? 'Saving…' : 'Save Changes'}
+                            </button>
+                            <button
+                              type="button"
+                              className="liquid-button text-xs"
+                              onClick={() => {
+                                setEditingId(null);
+                                setEditScriptText('');
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="whitespace-pre-wrap theme-text-secondary">
+                          {scriptContent || 'No script text stored yet.'}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               );

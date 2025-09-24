@@ -110,6 +110,38 @@ export async function deleteSavedDownload(id) {
   return handleResponse(response);
 }
 
+export async function saveWorkspaceScript({ script, title = '', tags = '', sourceUrl = '' }) {
+  const formData = new FormData();
+  formData.append('script', script);
+  formData.append('title', title);
+  formData.append('tags', tags);
+  formData.append('source_url', sourceUrl);
+  const response = await fetch(`${API_BASE}/workspace/scripts`, {
+    method: 'POST',
+    body: formData,
+  });
+  return handleResponse(response);
+}
+
+export async function updateWorkspaceScript({ id, script, title, tags, sourceUrl }) {
+  const formData = new FormData();
+  formData.append('script', script);
+  if (title !== undefined) {
+    formData.append('title', title);
+  }
+  if (tags !== undefined) {
+    formData.append('tags', tags);
+  }
+  if (sourceUrl !== undefined) {
+    formData.append('source_url', sourceUrl);
+  }
+  const response = await fetch(`${API_BASE}/workspace/scripts/${id}`, {
+    method: 'PUT',
+    body: formData,
+  });
+  return handleResponse(response);
+}
+
 export async function fetchWorkspace() {
   const response = await fetch(`${API_BASE}/workspace`);
   return handleResponse(response);
@@ -118,6 +150,43 @@ export async function fetchWorkspace() {
 export async function deleteWorkspaceEntry(id) {
   const response = await fetch(`${API_BASE}/workspace/${id}`, {
     method: 'DELETE',
+  });
+  return handleResponse(response);
+}
+
+export async function fetchWorkflowTools() {
+  const response = await fetch(`${API_BASE}/workflows/tools`);
+  return handleResponse(response);
+}
+
+export async function fetchWorkflows() {
+  const response = await fetch(`${API_BASE}/workflows`);
+  return handleResponse(response);
+}
+
+export async function createWorkflow({ name, nodes, edges, notes = '', layout = {} }) {
+  const response = await fetch(`${API_BASE}/workflows`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, nodes, edges, notes, layout }),
+  });
+  return handleResponse(response);
+}
+
+export async function updateWorkflow({ id, name, nodes, edges, notes, layout }) {
+  const response = await fetch(`${API_BASE}/workflows/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, nodes, edges, notes, layout }),
+  });
+  return handleResponse(response);
+}
+
+export async function runWorkflow({ id, payload }) {
+  const response = await fetch(`${API_BASE}/workflows/${id}/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload ?? {}),
   });
   return handleResponse(response);
 }

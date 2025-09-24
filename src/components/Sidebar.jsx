@@ -17,6 +17,7 @@ const futureFeatures = [
   { name: 'Script Polisher', description: 'Advanced AI rewrite workflow with variants.', icon: '🪄' },
   { name: 'Multi-voice Sequencer', description: 'Layer multiple AI voices across one spot.', icon: '🎙️' },
   { name: 'Full Project Mode', description: 'Idea → script → audio → video in a guided sprint.', icon: '🚀' },
+  { name: 'Workflow Automator', description: 'Chain tools into glass pipelines', icon: '🧠' },
 ];
 
 export default function Sidebar() {

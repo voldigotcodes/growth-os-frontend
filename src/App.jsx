@@ -6,6 +6,7 @@ import TTSPage from './pages/TTSPage.jsx';
 import TranscribePage from './pages/TranscribePage.jsx';
 import WorkspacePage from './pages/WorkspacePage.jsx';
 import KnowledgePage from './pages/KnowledgePage.jsx';
+import WorkflowPage from './pages/WorkflowPage.jsx';
 import { ThemeContext } from './context/ThemeContext.jsx';
 
 export default function App() {

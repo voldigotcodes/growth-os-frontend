@@ -4,7 +4,7 @@ import OutputPanel from '../components/OutputPanel.jsx';
 import FileUpload from '../components/FileUpload.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useToast } from '../components/ToastContext.jsx';
-import { modifyTranscript, transcribeFile } from '../lib/apiClient.js';
+import { modifyTranscript, saveWorkspaceScript, transcribeFile } from '../lib/apiClient.js';
 
 export default function TranscribePage() {
   const { theme } = useTheme();
@@ -17,6 +17,8 @@ export default function TranscribePage() {
   const [instruction, setInstruction] = useState('Rewrite for TikTok hook with urgency and social proof.');
   const [modifiedText, setModifiedText] = useState('');
   const [isModifying, setIsModifying] = useState(false);
+  const [scriptTitle, setScriptTitle] = useState('');
+  const [isSavingScript, setIsSavingScript] = useState(false);
 
   const subtleText = isDark ? 'text-white/60' : 'text-slate-500';
   const secondaryButton = isDark
@@ -25,6 +27,9 @@ export default function TranscribePage() {
   const accentSky = isDark
     ? 'liquid-button px-4 py-2 text-xs font-semibold border-sky-400/60 bg-sky-500/20 text-sky-100 hover:ring-sky-300/55'
     : 'liquid-button px-4 py-2 text-xs font-semibold border-sky-300/80 bg-sky-100/80 text-sky-700 hover:ring-sky-300/60';
+  const accentEmerald = isDark
+    ? 'liquid-button px-4 py-2 text-xs font-semibold border-emerald-400/60 bg-emerald-500/20 text-emerald-100 hover:ring-emerald-300/55'
+    : 'liquid-button px-4 py-2 text-xs font-semibold border-emerald-200/70 bg-emerald-100/80 text-emerald-700 hover:ring-emerald-200/60';
   const iconTile = isDark
     ? 'flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-base'
     : 'flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200/70 bg-white/80 text-base text-slate-600';
@@ -56,11 +61,31 @@ export default function TranscribePage() {
         version: 'txt',
       });
       setModifiedText(modified_text);
+      setScriptTitle((prev) => prev || 'Polished Script');
       addToast('Script polished and ready to record.');
     } catch (error) {
       addToast(error.message || 'Unable to polish the script.', 'error');
     } finally {
       setIsModifying(false);
+    }
+  };
+
+  const handleSaveScript = async () => {
+    if (!modifiedText.trim()) {
+      addToast('Polish a script before saving it to the workspace.', 'error');
+      return;
+    }
+    setIsSavingScript(true);
+    try {
+      await saveWorkspaceScript({
+        script: modifiedText,
+        title: scriptTitle,
+      });
+      addToast('Script stored in Workspace Library.');
+    } catch (error) {
+      addToast(error.message || 'Unable to save script to workspace.', 'error');
+    } finally {
+      setIsSavingScript(false);
     }
   };
 
@@ -171,9 +196,36 @@ export default function TranscribePage() {
                 />
               </label>
               {modifiedText && (
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
-                  <p className="text-xs uppercase tracking-[0.3em] theme-text-muted">Polished Script</p>
-                  <p className="mt-2 whitespace-pre-line theme-text-secondary">{modifiedText}</p>
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
+                    <p className="text-xs uppercase tracking-[0.3em] theme-text-muted">Polished Script</p>
+                    <p className="mt-2 whitespace-pre-line theme-text-secondary">{modifiedText}</p>
+                  </div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <label className="flex w-full flex-col gap-2 text-xs sm:max-w-sm">
+                      <span className="uppercase tracking-[0.3em] theme-text-muted">Workspace title</span>
+                      <input
+                        type="text"
+                        className={[
+                          'w-full rounded-2xl border px-4 py-3 text-sm shadow-inner focus:outline-none focus:ring-2',
+                          isDark
+                            ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
+                            : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
+                        ].join(' ')}
+                        placeholder="Polished Script"
+                        value={scriptTitle}
+                        onChange={(event) => setScriptTitle(event.target.value)}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className={accentEmerald}
+                      onClick={handleSaveScript}
+                      disabled={isSavingScript}
+                    >
+                      {isSavingScript ? 'Saving…' : 'Save to Workspace'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
