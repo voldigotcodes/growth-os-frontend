@@ -1,4 +1,4 @@
-import { Fragment, memo } from 'react';
+import { Fragment, memo, useMemo } from 'react';
 
 function statusBadge(status) {
   switch (status) {
@@ -11,15 +11,36 @@ function statusBadge(status) {
   }
 }
 
+function normalizeCredits(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number.parseFloat(value.trim());
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  if (typeof value === 'object') {
+    const keys = Object.keys(value);
+    if (keys.length === 1) {
+      return normalizeCredits(value[keys[0]]);
+    }
+    return keys
+      .map((key) => `${key}: ${normalizeCredits(value[key]) ?? '—'}`)
+      .join(' • ');
+  }
+  return null;
+}
+
 function RunSummaryDrawer({ open, onClose, summary }) {
   if (!open) return null;
 
   const steps = summary?.node_trace ?? [];
   const edges = summary?.edge_trace ?? [];
+  const creditsUsed = useMemo(() => normalizeCredits(summary?.credits_info?.consumed), [summary]);
+  const creditsRemaining = useMemo(() => normalizeCredits(summary?.credits_info?.remaining), [summary]);
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-slate-900/40 backdrop-blur-sm">
-      <div className="glass-panel liquid relative z-50 flex h-full w-full max-w-lg flex-col overflow-hidden px-8 py-10 shadow-[0_40px_80px_rgba(15,23,42,0.45)]">
+    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/50 backdrop-blur-xl">
+      <div className="glass-panel liquid relative flex h-full w-full max-w-lg flex-col overflow-hidden px-8 py-10 shadow-[0_40px_80px_rgba(15,23,42,0.45)]">
         <button
           type="button"
           onClick={onClose}
@@ -32,9 +53,10 @@ function RunSummaryDrawer({ open, onClose, summary }) {
           <p className="text-sm text-white/70">
             {summary?.workflow?.name ?? 'Workflow'} · {new Date(summary?.startedAt ?? Date.now()).toLocaleString()}
           </p>
-          {summary?.credits_info && (
+          {(creditsUsed !== null || creditsRemaining !== null) && (
             <div className="text-xs uppercase tracking-[0.35em] text-white/60">
-              Credits used: {summary.credits_info.consumed} · Remaining: {summary.credits_info.remaining}
+              {creditsUsed !== null ? `Credits used: ${creditsUsed}` : 'Credits used: —'}
+              {creditsRemaining !== null ? ` · Remaining: ${creditsRemaining}` : ''}
             </div>
           )}
           {summary?.error ? (

@@ -41,8 +41,26 @@ const TOOL_ICONS = {
   publisher: '🚀',
 };
 
+function generateId(prefix) {
+  let uuid = null;
+  try {
+    if (typeof window !== 'undefined' && window.crypto?.randomUUID) {
+      uuid = window.crypto.randomUUID();
+    } else if (typeof self !== 'undefined' && self.crypto?.randomUUID) {
+      uuid = self.crypto.randomUUID();
+    } else if (typeof global !== 'undefined' && global.crypto?.randomUUID) {
+      uuid = global.crypto.randomUUID();
+    }
+  } catch (error) {
+    // ignore and fall back
+  }
+  if (uuid) return `${prefix}-${uuid}`;
+  const fallback = `${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+  return `${prefix}-${fallback}`;
+}
+
 function createNodePayload(tool, position) {
-  const id = `node-${crypto?.randomUUID?.() ?? Date.now()}`;
+  const id = generateId('node');
   const inputPorts = tool.ports?.inputs ?? [];
   const outputPorts = tool.ports?.outputs ?? [];
   const defaults = tool.defaults ? JSON.parse(JSON.stringify(tool.defaults)) : {};
@@ -63,6 +81,42 @@ function createNodePayload(tool, position) {
       highlight: [],
     },
   };
+}
+
+function normalizePorts(portList, fallbackList, direction) {
+  if (!Array.isArray(portList)) {
+    return Array.isArray(fallbackList) ? fallbackList : [];
+  }
+  const metaById = new Map();
+  const metaByType = new Map();
+  (fallbackList ?? []).forEach((port) => {
+    if (port?.id) metaById.set(port.id, port);
+    if (port?.type) metaByType.set(port.type, port);
+  });
+
+  return portList.map((port, index) => {
+    if (typeof port === 'string') {
+      const meta = metaById.get(port) || metaByType.get(port);
+      if (meta) return meta;
+      return {
+        id: `${direction}-${port}-${index}`,
+        label: port,
+        type: port,
+        direction,
+      };
+    }
+    if (port && typeof port === 'object') {
+      const meta = port.id ? metaById.get(port.id) : metaByType.get(port.type);
+      const base = meta || {};
+      return {
+        ...base,
+        ...port,
+        id: port.id ?? base.id ?? `${direction}-${port.type ?? `p${index}`}-${index}`,
+        direction: port.direction ?? base.direction ?? direction,
+      };
+    }
+    return null;
+  }).filter(Boolean);
 }
 
 function formatDurationLabel(startIso, endIso) {
@@ -144,14 +198,20 @@ function WorkflowPageInner() {
         if (quotaResponse) {
           setQuota(quotaResponse);
         }
-        const formattedRuns = (runsResponse.items ?? []).map((run) => ({
+        const formattedRuns = (runsResponse.items ?? []).map((run) => {
+          const creditsValue = typeof run.credits_consumed === 'number'
+            ? run.credits_consumed
+            : typeof run.credits_consumed === 'string'
+              ? Number.parseFloat(run.credits_consumed)
+              : null;
+          return {
           id: run.id,
           workflowId: run.workflow_id,
           workflowName: run.workflow_name,
           status: run.status,
           startedAt: run.started_at,
           durationLabel: formatDurationLabel(run.started_at, run.finished_at),
-          credits: run.credits_consumed ?? null,
+          credits: Number.isFinite(creditsValue) ? creditsValue : null,
           summary: run.result ? {
             workflow: { id: run.workflow_id, name: run.workflow_name },
             node_trace: run.result.node_trace ?? [],
@@ -161,7 +221,8 @@ function WorkflowPageInner() {
             finishedAt: run.finished_at,
             error: run.error,
           } : { error: run.error },
-        }));
+        };
+        });
         setRunHistory(formattedRuns);
       } catch (error) {
         addToast(error.message || 'Unable to load workflow data.', 'error');
@@ -282,7 +343,7 @@ function WorkflowPageInner() {
 
       const labelType = sourceType ?? targetType ?? 'flow';
       const edge = {
-        id: `edge-${crypto?.randomUUID?.() ?? Date.now()}`,
+        id: generateId('edge'),
         ...connection,
         data: {
           dataType: labelType,
@@ -434,7 +495,9 @@ function WorkflowPageInner() {
           status: 'completed',
           startedAt: summaryPayload.startedAt,
           durationLabel: formatDurationLabel(summaryPayload.startedAt, summaryPayload.finishedAt),
-          credits: response.credits_info?.consumed ?? null,
+          credits: Number.isFinite(response.credits_info?.consumed)
+            ? response.credits_info?.consumed
+            : null,
           summary: summaryPayload,
         },
         ...prev,
@@ -470,8 +533,8 @@ function WorkflowPageInner() {
     const newNodes = (wf.nodes ?? []).map((node, index) => {
       const toolMeta = tools.find((tool) => tool.type === node.type) ?? {};
       const savedData = node.data ?? {};
-      const inputs = savedData.inputs ?? toolMeta.ports?.inputs ?? [];
-      const outputs = savedData.outputs ?? toolMeta.ports?.outputs ?? [];
+      const inputs = normalizePorts(savedData.inputs, toolMeta.ports?.inputs, 'input');
+      const outputs = normalizePorts(savedData.outputs, toolMeta.ports?.outputs, 'output');
       const configSchema = savedData.configSchema ?? toolMeta.config_schema ?? {};
       const defaults = savedData.defaults ?? toolMeta.defaults ?? {};
       const mergedConfig = { ...defaults, ...(savedData.config ?? {}) };
@@ -494,18 +557,26 @@ function WorkflowPageInner() {
       };
     });
 
-    const newEdges = (wf.edges ?? []).map((edge, index) => ({
-      id: edge.id ?? `edge-${index}`,
-      source: edge.from,
-      target: edge.to,
-      sourceHandle: edge.source_handle,
-      targetHandle: edge.target_handle,
-      data: {
-        dataType: edge.type,
-        active: false,
-      },
-      markerEnd: { type: MarkerType.ArrowClosed, color: 'rgba(255,255,255,0.7)' },
-    }));
+    const nodeLookup = new Map(newNodes.map((node) => [node.id, node]));
+    const newEdges = (wf.edges ?? []).map((edge, index) => {
+      const sourceNode = nodeLookup.get(edge.from);
+      const targetNode = nodeLookup.get(edge.to);
+      const fallbackSource = sourceNode?.data?.outputs?.find((port) => port.type === edge.type)?.id;
+      const fallbackTarget = targetNode?.data?.inputs?.find((port) => port.type === edge.type)?.id;
+
+      return {
+        id: edge.id ?? `edge-${index}`,
+        source: edge.from,
+        target: edge.to,
+        sourceHandle: edge.source_handle ?? fallbackSource,
+        targetHandle: edge.target_handle ?? fallbackTarget,
+        data: {
+          dataType: edge.type,
+          active: false,
+        },
+        markerEnd: { type: MarkerType.ArrowClosed, color: 'rgba(255,255,255,0.7)' },
+      };
+    });
 
     setNodes(newNodes);
     setEdges(newEdges);

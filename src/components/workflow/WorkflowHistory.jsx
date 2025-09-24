@@ -12,6 +12,22 @@ function statusIcon(status) {
 }
 
 function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onViewLogs }) {
+  const formatCredits = (value) => {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = Number.parseFloat(value.trim());
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    if (typeof value === 'object') {
+      const candidates = [value.consumed, value.workflow_runs, value.credits_consumed];
+      for (const candidate of candidates) {
+        if (typeof candidate === 'number' && Number.isFinite(candidate)) return candidate;
+      }
+    }
+    return null;
+  };
+
   return (
     <div className="glass-panel space-y-4 p-6">
       <header className="space-y-1">
@@ -48,8 +64,8 @@ function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onVie
                 </div>
                 <div className="text-right text-[11px] uppercase tracking-[0.3em] theme-text-muted">
                   <p>{entry.status === 'failed' ? 'Review' : 'View'}</p>
-                  {entry.credits && (
-                    <p className="mt-1 text-white/70">-{entry.credits} credits</p>
+                  {formatCredits(entry.credits) !== null && (
+                    <p className="mt-1 text-white/70">-{formatCredits(entry.credits)} credits</p>
                   )}
                 </div>
               </div>
