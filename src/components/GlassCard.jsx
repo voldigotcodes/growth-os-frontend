@@ -14,6 +14,7 @@ export default function GlassCard({
   children,
   allowOverflow = false,
   interactive = true,
+  liquid = true,
 }) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -22,6 +23,7 @@ export default function GlassCard({
     'relative rounded-3xl glass-panel p-8 transition-all duration-300',
     allowOverflow ? 'overflow-visible' : 'overflow-hidden',
     interactive ? '' : 'glass-static',
+    liquid ? 'liquid' : '',
     isDark ? 'shadow-soft hover:border-white/25' : 'shadow-[0_35px_65px_rgba(148,163,184,0.25)] hover:border-sky-300/70',
     isDark ? darkGlow : lightGlow,
     className,
