@@ -15,6 +15,7 @@ import WorkflowCanvas from '../components/workflow/WorkflowCanvas.jsx';
 import WorkflowPalette from '../components/workflow/WorkflowPalette.jsx';
 import WorkflowLibrary from '../components/workflow/WorkflowLibrary.jsx';
 import WorkflowToolbar from '../components/workflow/WorkflowToolbar.jsx';
+import WorkflowNodeConfigPanel from '../components/workflow/WorkflowNodeConfigPanel.jsx';
 import OnboardingOverlay from '../components/workflow/OnboardingOverlay.jsx';
 import QuickStartTemplates from '../components/workflow/QuickStartTemplates.jsx';
 import WorkflowHistory from '../components/workflow/WorkflowHistory.jsx';
@@ -28,6 +29,7 @@ import {
   fetchWorkflowTemplates,
   useWorkflowTemplate,
   fetchUserQuota,
+  fetchWorkflowRuns,
 } from '../lib/apiClient.js';
 
 const TOOL_ICONS = {
@@ -41,18 +43,44 @@ const TOOL_ICONS = {
 
 function createNodePayload(tool, position) {
   const id = `node-${crypto?.randomUUID?.() ?? Date.now()}`;
+  const inputPorts = tool.ports?.inputs ?? [];
+  const outputPorts = tool.ports?.outputs ?? [];
+  const defaults = tool.defaults ? JSON.parse(JSON.stringify(tool.defaults)) : {};
   return {
     id,
     position,
     data: {
       label: tool.label,
       toolType: tool.type,
-      inputs: tool.inputs ?? [],
-      outputs: tool.outputs ?? [],
+      description: tool.description,
+      inputs: inputPorts,
+      outputs: outputPorts,
+      configSchema: tool.config_schema ?? {},
+      config: defaults,
+      defaults,
+      icon: tool.icon,
       status: 'idle',
       highlight: [],
     },
   };
+}
+
+function formatDurationLabel(startIso, endIso) {
+  try {
+    const start = new Date(startIso);
+    const end = endIso ? new Date(endIso) : new Date();
+    const diffMs = end.getTime() - start.getTime();
+    if (!Number.isFinite(diffMs) || diffMs < 0) return '—';
+    const seconds = Math.max(1, Math.round(diffMs / 1000));
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.round(minutes / 60);
+    return `${hours}h`;
+  } catch (error) {
+    console.warn('Unable to format duration:', error);
+    return '—';
+  }
 }
 
 function WorkflowPageInner() {
@@ -76,6 +104,7 @@ function WorkflowPageInner() {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [templateLoadingId, setTemplateLoadingId] = useState(null);
   const [quota, setQuota] = useState(null);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [pendingRunWorkflowId, setPendingRunWorkflowId] = useState(null);
 
   const animationActiveRef = useRef(false);
@@ -94,7 +123,7 @@ function WorkflowPageInner() {
       }
 
       try {
-        const [workflowResponse, templateResponse, quotaResponse] = await Promise.all([
+        const [workflowResponse, templateResponse, quotaResponse, runsResponse] = await Promise.all([
           fetchWorkflows(),
           fetchWorkflowTemplates().catch((error) => {
             console.warn('Failed to load templates:', error);
@@ -104,6 +133,10 @@ function WorkflowPageInner() {
             console.warn('Failed to load quota:', error);
             return null;
           }),
+          fetchWorkflowRuns().catch((error) => {
+            console.warn('Failed to load workflow runs:', error);
+            return { items: [] };
+          }),
         ]);
 
         setWorkflows(workflowResponse.items ?? []);
@@ -111,6 +144,25 @@ function WorkflowPageInner() {
         if (quotaResponse) {
           setQuota(quotaResponse);
         }
+        const formattedRuns = (runsResponse.items ?? []).map((run) => ({
+          id: run.id,
+          workflowId: run.workflow_id,
+          workflowName: run.workflow_name,
+          status: run.status,
+          startedAt: run.started_at,
+          durationLabel: formatDurationLabel(run.started_at, run.finished_at),
+          credits: run.credits_consumed ?? null,
+          summary: run.result ? {
+            workflow: { id: run.workflow_id, name: run.workflow_name },
+            node_trace: run.result.node_trace ?? [],
+            edge_trace: run.result.edge_trace ?? [],
+            outputs: run.result.outputs ?? [],
+            startedAt: run.started_at,
+            finishedAt: run.finished_at,
+            error: run.error,
+          } : { error: run.error },
+        }));
+        setRunHistory(formattedRuns);
       } catch (error) {
         addToast(error.message || 'Unable to load workflow data.', 'error');
       }
@@ -123,6 +175,12 @@ function WorkflowPageInner() {
       nodes.some((node) => node.selected) || edges.some((edge) => edge.selected)
     );
   }, [nodes, edges]);
+
+  useEffect(() => {
+    if (selectedNodeId && !nodes.some((node) => node.id === selectedNodeId)) {
+      setSelectedNodeId(null);
+    }
+  }, [nodes, selectedNodeId]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -162,6 +220,7 @@ function WorkflowPageInner() {
     setNotes('');
     animationActiveRef.current = false;
     setInvalidHandles({});
+    setSelectedNodeId(null);
   }, [setEdges, setNodes]);
 
   const handleDropTool = useCallback(
@@ -191,34 +250,51 @@ function WorkflowPageInner() {
 
   const handleConnect = useCallback(
     (connection) => {
-      const sourceType = connection.sourceHandle?.split('-')[1];
-      const targetType = connection.targetHandle?.split('-')[1];
+      const getPort = (nodeId, handleId, direction) => {
+        if (!nodeId || !handleId) return null;
+        const node = reactFlow.getNode(nodeId);
+        if (!node?.data) return null;
+        const collection = direction === 'output' ? node.data.outputs : node.data.inputs;
+        if (!Array.isArray(collection)) return null;
+        return collection.find((port) => port.id === handleId) ?? null;
+      };
+
+      const sourcePort = getPort(connection.source, connection.sourceHandle, 'output');
+      const targetPort = getPort(connection.target, connection.targetHandle, 'input');
+      const sourceType = sourcePort?.type ?? sourcePort?.data_type ?? sourcePort?.dataType;
+      const targetType = targetPort?.type ?? targetPort?.data_type ?? targetPort?.dataType;
+
+      if (!sourcePort || !targetPort || !connection.sourceHandle || !connection.targetHandle) {
+        addToast('Connect matching ports on valid tools.', 'error');
+        return false;
+      }
+
       if (sourceType && targetType && sourceType !== targetType) {
         addToast('Ports must share the same data type.', 'error');
-        const highlights = {};
-        if (connection.source && connection.sourceHandle) {
-          highlights[connection.source] = [connection.sourceHandle];
-        }
-        if (connection.target && connection.targetHandle) {
-          highlights[connection.target] = [connection.targetHandle];
-        }
+        const highlights = {
+          [connection.source]: [connection.sourceHandle],
+          [connection.target]: [connection.targetHandle],
+        };
         setInvalidHandles(highlights);
-        setTimeout(() => setInvalidHandles({}), 800);
-        return;
+        setTimeout(() => setInvalidHandles({}), 900);
+        return false;
       }
+
+      const labelType = sourceType ?? targetType ?? 'flow';
       const edge = {
         id: `edge-${crypto?.randomUUID?.() ?? Date.now()}`,
         ...connection,
         data: {
-          dataType: sourceType ?? targetType ?? 'flow',
+          dataType: labelType,
           active: false,
         },
         markerEnd: { type: MarkerType.ArrowClosed, color: 'rgba(255,255,255,0.7)' },
       };
       setInvalidHandles({});
       setEdges((eds) => addEdge(edge, eds));
+      return true;
     },
-    [addToast, setEdges]
+    [addToast, reactFlow, setEdges]
   );
 
   const extractWorkflowPayload = useCallback(() => {
@@ -226,6 +302,11 @@ function WorkflowPageInner() {
       id: node.id,
       type: node.data?.toolType,
       position: node.position,
+      data: {
+        label: node.data?.label,
+        description: node.data?.description,
+        config: node.data?.config ?? {},
+      },
     }));
     const formattedEdges = edges.map((edge) => ({
       from: edge.source,
@@ -341,6 +422,7 @@ function WorkflowPageInner() {
         edge_trace: response.result?.edge_trace ?? [],
         outputs: response.result?.outputs ?? [],
       };
+      summaryPayload.finishedAt = new Date().toISOString();
       const runId = `${response.workflow?.id ?? selectedWorkflow.id}-${startedAt.getTime()}`;
       setRunSummary(summaryPayload);
       setSummaryOpen(true);
@@ -351,7 +433,7 @@ function WorkflowPageInner() {
           workflowName: response.workflow?.name ?? workflowName,
           status: 'completed',
           startedAt: summaryPayload.startedAt,
-          durationLabel: 'Moments ago',
+          durationLabel: formatDurationLabel(summaryPayload.startedAt, summaryPayload.finishedAt),
           credits: response.credits_info?.consumed ?? null,
           summary: summaryPayload,
         },
@@ -360,6 +442,7 @@ function WorkflowPageInner() {
     } catch (error) {
       addToast(error.message || 'Unable to run workflow.', 'error');
       const runId = `${selectedWorkflow?.id ?? 'draft'}-${startedAt.getTime()}`;
+      const finishedAt = new Date().toISOString();
       setRunHistory((prev) => [
         {
           id: runId,
@@ -367,7 +450,7 @@ function WorkflowPageInner() {
           workflowName: workflowName,
           status: 'failed',
           startedAt: startedAt.toISOString(),
-          durationLabel: 'Failed immediately',
+          durationLabel: formatDurationLabel(startedAt.toISOString(), finishedAt),
           credits: null,
           summary: { error: error.message },
         },
@@ -386,14 +469,25 @@ function WorkflowPageInner() {
 
     const newNodes = (wf.nodes ?? []).map((node, index) => {
       const toolMeta = tools.find((tool) => tool.type === node.type) ?? {};
+      const savedData = node.data ?? {};
+      const inputs = savedData.inputs ?? toolMeta.ports?.inputs ?? [];
+      const outputs = savedData.outputs ?? toolMeta.ports?.outputs ?? [];
+      const configSchema = savedData.configSchema ?? toolMeta.config_schema ?? {};
+      const defaults = savedData.defaults ?? toolMeta.defaults ?? {};
+      const mergedConfig = { ...defaults, ...(savedData.config ?? {}) };
       return {
         id: node.id,
         position: node.position ?? { x: 160 + index * 60, y: 140 + index * 45 },
         data: {
-          label: toolMeta.label ?? node.data?.label ?? node.type,
+          label: savedData.label ?? toolMeta.label ?? node.type,
           toolType: node.type,
-          inputs: toolMeta.inputs ?? node.data?.inputs ?? [],
-          outputs: toolMeta.outputs ?? node.data?.outputs ?? [],
+          description: savedData.description ?? toolMeta.description,
+          inputs,
+          outputs,
+          configSchema,
+          defaults,
+          config: mergedConfig,
+          icon: toolMeta.icon,
           status: 'idle',
           highlight: [],
         },
@@ -416,6 +510,7 @@ function WorkflowPageInner() {
     setNodes(newNodes);
     setEdges(newEdges);
     setInvalidHandles({});
+    setSelectedNodeId(null);
   }, [setEdges, setNodes, tools]);
 
   const handleSelectWorkflow = useCallback(
@@ -455,8 +550,23 @@ function WorkflowPageInner() {
     }
     return '≈1 workflow credit';
   }, [quota]);
-  const canRun = Boolean(selectedWorkflow?.id && nodes.length);
+  const configReady = useMemo(() =>
+    nodes.every((node) => {
+      const schema = node.data?.configSchema;
+      const required = schema?.required ?? [];
+      if (!required.length) return true;
+      return required.every((key) => {
+        const value = node.data?.config?.[key];
+        return value !== undefined && value !== '' && value !== null;
+      });
+    }),
+  [nodes]);
+  const canRun = Boolean(selectedWorkflow?.id && nodes.length && configReady);
   const selectedWorkflowId = selectedWorkflow?.id ?? null;
+  const selectedNode = useMemo(
+    () => nodes.find((node) => node.id === selectedNodeId) ?? null,
+    [nodes, selectedNodeId]
+  );
 
   const handleHistoryEntrySelect = useCallback((entry) => {
     if (!entry?.summary) {
@@ -486,8 +596,9 @@ function WorkflowPageInner() {
         return;
       }
       outputs.forEach((output) => {
-        if (output?.url) {
-          window.open(output.url, '_blank', 'noreferrer');
+        const url = output?.url ?? output?.value?.url;
+        if (url) {
+          window.open(url, '_blank', 'noreferrer');
         }
       });
     },
@@ -513,12 +624,26 @@ function WorkflowPageInner() {
     [addToast, loadWorkflowDefinition, selectedWorkflowId, workflows]
   );
 
-  const validateConnection = useCallback((connection) => {
-    const sourceType = connection.sourceHandle?.split('-')[1];
-    const targetType = connection.targetHandle?.split('-')[1];
-    if (!sourceType || !targetType) return true;
-    return sourceType === targetType;
-  }, []);
+  const validateConnection = useCallback(
+    (connection) => {
+      if (!(connection?.source && connection?.target)) return false;
+      const sourceNode = reactFlow.getNode(connection.source);
+      const targetNode = reactFlow.getNode(connection.target);
+      const getPort = (node, handle, dir) => {
+        if (!node?.data) return null;
+        const ports = dir === 'output' ? node.data.outputs : node.data.inputs;
+        if (!Array.isArray(ports)) return null;
+        return ports.find((port) => port.id === handle) ?? null;
+      };
+      const sourcePort = getPort(sourceNode, connection.sourceHandle, 'output');
+      const targetPort = getPort(targetNode, connection.targetHandle, 'input');
+      if (!sourcePort || !targetPort) return false;
+      const sourceType = sourcePort.type ?? sourcePort.data_type ?? sourcePort.dataType;
+      const targetType = targetPort.type ?? targetPort.data_type ?? targetPort.dataType;
+      return !sourceType || !targetType || sourceType === targetType;
+    },
+    [reactFlow]
+  );
 
   useEffect(() => {
     if (!pendingRunWorkflowId) return;
@@ -528,6 +653,30 @@ function WorkflowPageInner() {
       setPendingRunWorkflowId(null);
     }
   }, [handleRunWorkflow, isRunning, pendingRunWorkflowId, selectedWorkflowId]);
+
+  const handleSelectionChange = useCallback((selection) => {
+    const firstNode = selection?.nodes?.[0];
+    setSelectedNodeId(firstNode?.id ?? null);
+  }, []);
+
+  const handleConfigUpdate = useCallback(
+    (nodeId, updatedConfig) => {
+      setNodes((prev) =>
+        prev.map((node) =>
+          node.id === nodeId
+            ? {
+              ...node,
+              data: {
+                ...node.data,
+                config: { ...node.data?.config, ...updatedConfig },
+              },
+            }
+            : node
+        )
+      );
+    },
+    [setNodes]
+  );
 
   return (
     <>
@@ -548,22 +697,23 @@ function WorkflowPageInner() {
             interactive={false}
           >
             <div className="relative h-[520px]">
-              <WorkflowCanvas
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={handleConnect}
-                onDropTool={handleDropTool}
-                invalidHandles={invalidHandles}
-                validateConnection={validateConnection}
-              />
-              {canvasEmpty ? <OnboardingOverlay /> : null}
-            </div>
-          </GlassCard>
+            <WorkflowCanvas
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={handleConnect}
+              onDropTool={handleDropTool}
+              invalidHandles={invalidHandles}
+              validateConnection={validateConnection}
+              onSelectionChange={handleSelectionChange}
+            />
+            {canvasEmpty ? <OnboardingOverlay /> : null}
+          </div>
+        </GlassCard>
 
-          <div className="flex flex-col gap-6">
-            <WorkflowToolbar
+        <div className="flex flex-col gap-6">
+          <WorkflowToolbar
               onSave={handleSaveWorkflow}
               onRun={handleRunWorkflow}
               onDeleteSelection={handleDeleteSelection}
@@ -573,6 +723,11 @@ function WorkflowPageInner() {
               canRun={canRun}
               estimatedCost={estimatedCostLabel}
               hasSelection={hasSelection}
+            />
+
+            <WorkflowNodeConfigPanel
+              node={selectedNode}
+              onChange={handleConfigUpdate}
             />
 
             <WorkflowPalette tools={paletteTools} onAdd={handlePaletteAdd} />

@@ -20,6 +20,7 @@ function WorkflowCanvas({
   onDropTool,
   invalidHandles,
   validateConnection,
+  onSelectionChange,
 }) {
   const reactFlow = useReactFlow();
 
@@ -75,6 +76,7 @@ function WorkflowCanvas({
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       fitView
+      onSelectionChange={onSelectionChange}
       className="workbench-flow relative z-10"
       proOptions={{ hideAttribution: true }}
     >

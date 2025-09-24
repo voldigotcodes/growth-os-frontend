@@ -240,6 +240,13 @@ export async function runWorkflow({ id, payload }) {
   return handleResponse(response);
 }
 
+export async function fetchWorkflowRuns() {
+  const response = await fetch(`${API_BASE}/workflows/runs`, {
+    headers: getUserHeaders()
+  });
+  return handleResponse(response);
+}
+
 export async function fetchKnowledge() {
   const response = await fetch(`${API_BASE}/knowledge`);
   return handleResponse(response);

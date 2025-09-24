@@ -37,6 +37,11 @@ function RunSummaryDrawer({ open, onClose, summary }) {
               Credits used: {summary.credits_info.consumed} · Remaining: {summary.credits_info.remaining}
             </div>
           )}
+          {summary?.error ? (
+            <div className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-xs text-rose-200">
+              {summary.error}
+            </div>
+          ) : null}
         </header>
 
         <section className="mt-6 space-y-4 overflow-y-auto pr-3">
@@ -56,7 +61,11 @@ function RunSummaryDrawer({ open, onClose, summary }) {
                   </div>
                   <p className="mt-2 text-xs text-white/70">Tool: {step.tool}</p>
                   {step.outputs ? (
-                    <p className="mt-1 text-xs text-white/60">Outputs: {Array.isArray(step.outputs) ? step.outputs.join(', ') : step.outputs}</p>
+                    <p className="mt-1 text-xs text-white/60">
+                      Outputs: {Array.isArray(step.outputs)
+                        ? step.outputs.join(', ')
+                        : Object.keys(step.outputs).join(', ')}
+                    </p>
                   ) : null}
                 </div>
                 {index < steps.length - 1 ? (
@@ -75,14 +84,22 @@ function RunSummaryDrawer({ open, onClose, summary }) {
           <section className="mt-6 space-y-2 text-sm text-white/80">
             <h3 className="text-base font-semibold text-white">Generated Outputs</h3>
             <ul className="space-y-2">
-              {summary.outputs.map((output) => (
-                <li key={output.url} className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/8 px-3 py-2">
-                  <span className="truncate text-xs text-white/75">{output.label}</span>
-                  <a href={output.url} target="_blank" rel="noreferrer" className="text-xs uppercase tracking-[0.3em] text-sky-200">
-                    Open
-                  </a>
-                </li>
-              ))}
+              {summary.outputs.map((output) => {
+                const url = output?.url ?? output?.value?.url;
+                const label = output?.label ?? `${output.node_id} · ${output.port_id}`;
+                return (
+                  <li key={`${output.node_id}-${output.port_id}`} className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/8 px-3 py-2">
+                    <span className="truncate text-xs text-white/75">{label}</span>
+                    {url ? (
+                      <a href={url} target="_blank" rel="noreferrer" className="text-xs uppercase tracking-[0.3em] text-sky-200">
+                        Open
+                      </a>
+                    ) : (
+                      <span className="text-xs uppercase tracking-[0.3em] text-white/50">No link</span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ) : null}

@@ -5,14 +5,18 @@ function WorkflowNode({ data, selected }) {
   const {
     label,
     toolType,
+    description,
     inputs = [],
     outputs = [],
+    config = {},
     status = 'idle',
     highlight = [],
     validateConnection,
   } = data ?? {};
 
   const highlightSet = useMemo(() => new Set(highlight), [highlight]);
+  const inputPorts = Array.isArray(inputs) ? inputs : [];
+  const outputPorts = Array.isArray(outputs) ? outputs : [];
 
   const statusRing =
     status === 'active'
@@ -33,39 +37,54 @@ function WorkflowNode({ data, selected }) {
         <div>
           <p className="text-sm font-semibold theme-text-primary">{label || 'Workflow Tool'}</p>
           <p className="text-[10px] uppercase tracking-[0.35em] theme-text-muted">{toolType}</p>
+          {description ? (
+            <p className="mt-1 text-[11px] text-white/70">{description}</p>
+          ) : null}
         </div>
         <span className="text-base drop-shadow-[0_3px_9px_rgba(15,23,42,0.45)]" aria-hidden>
           ⚙️
         </span>
       </header>
 
-      {inputs.length ? (
+      {inputPorts.length ? (
         <div className="flex flex-col gap-2">
-          {inputs.map((type, index) => (
+          {inputPorts.map((port) => (
             <Port
-              key={`in-${type}-${index}`}
-              id={`input-${type}-${index}`}
-              type={type}
-              kind="input"
-              highlighted={highlightSet.has(`input-${type}-${index}`)}
+              key={port.id}
+              port={port}
+              highlighted={highlightSet.has(port.id)}
               onValidate={validateConnection}
             />
           ))}
         </div>
       ) : null}
 
-      {outputs.length ? (
+      {outputPorts.length ? (
         <div className="flex flex-col gap-2">
-          {outputs.map((type, index) => (
+          {outputPorts.map((port) => (
             <Port
-              key={`out-${type}-${index}`}
-              id={`output-${type}-${index}`}
-              type={type}
-              kind="output"
-              highlighted={highlightSet.has(`output-${type}-${index}`)}
+              key={port.id}
+              port={port}
+              highlighted={highlightSet.has(port.id)}
               onValidate={validateConnection}
             />
           ))}
+        </div>
+      ) : null}
+
+      {config && Object.keys(config).length ? (
+        <div className="rounded-2xl border border-white/10 bg-white/8 px-3 py-2 text-[11px] text-white/70">
+          <p className="font-semibold uppercase tracking-[0.3em] text-white/60">Config</p>
+          <ul className="mt-1 space-y-1">
+            {Object.entries(config)
+              .slice(0, 3)
+              .map(([key, value]) => (
+                <li key={key} className="flex items-center justify-between gap-3">
+                  <span className="uppercase tracking-[0.3em] text-white/60">{key}</span>
+                  <span className="truncate text-white/80">{String(value)}</span>
+                </li>
+              ))}
+          </ul>
         </div>
       ) : null}
     </div>

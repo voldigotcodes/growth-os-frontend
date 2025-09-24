@@ -36,14 +36,21 @@ function WorkflowPalette({ tools, onAdd }) {
             <div className="flex flex-1 items-center justify-between gap-3">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-semibold theme-text-primary">{tool.label}</p>
+                <p className="text-[11px] text-white/70">
+                  {tool.description}
+                </p>
                 <div className="flex flex-wrap gap-1 text-[10px] uppercase tracking-[0.3em] theme-text-muted">
-                  {tool.inputs?.length ? (
-                    <span className="rounded-full border border-white/15 px-2 py-[2px]">In: {tool.inputs.join(', ')}</span>
+                  {(tool.ports?.inputs ?? []).length ? (
+                    <span className="rounded-full border border-white/15 px-2 py-[2px]">
+                      In: {(tool.ports?.inputs ?? []).map((port) => port.type).join(', ')}
+                    </span>
                   ) : (
                     <span className="rounded-full border border-white/15 px-2 py-[2px]">Source</span>
                   )}
-                  {tool.outputs?.length ? (
-                    <span className="rounded-full border border-white/15 px-2 py-[2px]">Out: {tool.outputs.join(', ')}</span>
+                  {(tool.ports?.outputs ?? []).length ? (
+                    <span className="rounded-full border border-white/15 px-2 py-[2px]">
+                      Out: {(tool.ports?.outputs ?? []).map((port) => port.type).join(', ')}
+                    </span>
                   ) : null}
                 </div>
               </div>
