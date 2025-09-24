@@ -75,7 +75,7 @@ function WorkflowCanvas({
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       fitView
-      className="workbench-flow"
+      className="workbench-flow relative z-10"
       proOptions={{ hideAttribution: true }}
     >
       <svg style={{ position: 'absolute', width: 0, height: 0 }}>

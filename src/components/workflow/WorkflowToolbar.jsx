@@ -2,7 +2,7 @@ import { memo } from 'react';
 
 function WorkflowToolbar({ onSave, onRun, onDeleteSelection, onClear, running, saving }) {
   return (
-    <div className="glass-panel glass-static flex flex-wrap items-center gap-3 rounded-3xl px-5 py-4 text-xs shadow-[0_18px_45px_rgba(15,23,42,0.25)]">
+    <div className="glass-panel glass-static flex flex-wrap items-center gap-3 rounded-3xl px-5 py-4 text-xs shadow-[0_18px_45px_rgba(15,23,42,0.25)] relative z-50">
       <button
         type="button"
         className="liquid-button text-xs bg-transparent border-sky-400/45 text-sky-100 shadow-[0_0_20px_rgba(56,189,248,0.35)] hover:bg-sky-500/10"

@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Sidebar from './components/Sidebar.jsx';
+import OnboardingTour from './components/OnboardingTour.jsx';
 import DownloadPage from './pages/DownloadPage.jsx';
 import TTSPage from './pages/TTSPage.jsx';
 import TranscribePage from './pages/TranscribePage.jsx';
 import WorkspacePage from './pages/WorkspacePage.jsx';
 import KnowledgePage from './pages/KnowledgePage.jsx';
 import WorkflowPage from './pages/WorkflowPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
+import PricingPage from './pages/PricingPage.jsx';
 import { ThemeContext } from './context/ThemeContext.jsx';
 
 export default function App() {
   const [theme, setTheme] = useState('dark');
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     const body = document.body;
@@ -61,16 +65,22 @@ export default function App() {
             </div>
 
             <Routes>
-              <Route path="/" element={<Navigate to="/download" replace />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/transcribe" element={<TranscribePage />} />
               <Route path="/tts" element={<TTSPage />} />
               <Route path="/download" element={<DownloadPage />} />
               <Route path="/workspace" element={<WorkspacePage />} />
               <Route path="/knowledge" element={<KnowledgePage />} />
-              <Route path="*" element={<Navigate to="/download" replace />} />
+              <Route path="/workflows" element={<WorkflowPage />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>
         </main>
+
+        {/* Onboarding Tour */}
+        <OnboardingTour onComplete={() => setShowOnboarding(false)} />
       </div>
     </ThemeContext.Provider>
   );

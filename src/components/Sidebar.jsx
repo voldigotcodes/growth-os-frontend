@@ -2,22 +2,36 @@ import { NavLink } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.jsx';
 import DisabledMenu from './DisabledMenu.jsx';
 
-const navigation = [
-  { name: 'Inspiration Vault', description: 'Collect and tag competitor ads', icon: '🗂️', to: '/download' },
-  { name: 'Script Refinery', description: 'Polish transcripts into ad copy', icon: '✏️', to: '/transcribe' },
-  { name: 'AI Voice Studio', description: 'Record natural ecommerce voiceovers', icon: '🎧', to: '/tts' },
-  { name: 'Workspace Library', description: 'Grab saved drafts and exports', icon: '📦', to: '/workspace' },
-  { name: 'General Knowledge', description: 'Edit the global context for prompts', icon: '📚', to: '/knowledge' },
+const navigationSections = [
+  {
+    title: 'Create',
+    items: [
+      { name: 'Dashboard', description: 'Growth metrics & insights', icon: '📊', to: '/dashboard' },
+      { name: 'Inspiration', description: 'Collect competitor ads', icon: '🗂️', to: '/download' },
+      { name: 'Script Polish', description: 'Refine transcripts into copy', icon: '✏️', to: '/transcribe' },
+      { name: 'Voice Studio', description: 'Generate AI voiceovers', icon: '🎧', to: '/tts' },
+    ]
+  },
+  {
+    title: 'Automate',
+    items: [
+      { name: 'Workflows', description: 'Visual automation builder', icon: '⚡', to: '/workflows' },
+      { name: 'Workspace', description: 'Saved drafts & exports', icon: '📦', to: '/workspace' },
+    ]
+  },
+  {
+    title: 'Configure',
+    items: [
+      { name: 'Knowledge', description: 'Global AI context & prompts', icon: '📚', to: '/knowledge' },
+      { name: 'Upgrade', description: 'Pricing plans & billing', icon: '🚀', to: '/pricing', highlight: true },
+    ]
+  }
 ];
 
 const futureFeatures = [
-  { name: 'Competitor Ad Library', description: 'Deep pulls from Facebook Ad Library with angle tagging.', icon: '📊' },
-  { name: 'Story & Reel Downloader', description: 'One-click saves for TikTok and Instagram verticals.', icon: '🎞️' },
-  { name: 'B-roll Finder', description: 'Curated stock footage to match your product shots.', icon: '🎬' },
-  { name: 'Script Polisher', description: 'Advanced AI rewrite workflow with variants.', icon: '🪄' },
-  { name: 'Multi-voice Sequencer', description: 'Layer multiple AI voices across one spot.', icon: '🎙️' },
-  { name: 'Full Project Mode', description: 'Idea → script → audio → video in a guided sprint.', icon: '🚀' },
-  { name: 'Workflow Automator', description: 'Chain tools into glass pipelines', icon: '🧠' },
+  { name: 'Growth Pulse', description: 'Workflow nudges & launch analytics tuned by live performance data.', icon: '📈' },
+  { name: 'Competitor Library', description: 'Deep pulls from Facebook Ad Library with angle tagging.', icon: '📊' },
+  { name: 'Full Project Mode', description: 'Idea → script → audio → video in guided sprint.', icon: '🚀' },
 ];
 
 export default function Sidebar() {
@@ -69,56 +83,64 @@ export default function Sidebar() {
         </button>
       </div>
 
-      <nav className="flex-1 space-y-2">
-        {navigation.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              [
-                'liquid-interactive group flex items-center gap-3 px-4 py-3 text-sm font-medium',
-                isDark ? 'hover:ring-pink-400/50 text-white/75 hover:text-white' : 'hover:ring-pink-400/50 text-slate-600 hover:text-slate-900',
-                isActive
-                  ? isDark
-                    ? 'ring-2 ring-cyan-300/45 bg-white/10 text-white hover:ring-cyan-300/55'
-                    : 'ring-2 ring-sky-400/50 bg-white/90 text-slate-900 hover:ring-sky-400/60'
-                  : '',
-              ]
-                .filter(Boolean)
-                .join(' ')
-            }
-            title={item.description}
-          >
-            <span className="text-lg">{item.icon}</span>
-            <span>{item.name}</span>
-            <span
-              className={[
-                'ml-auto text-xs opacity-0 transition-opacity duration-200',
-                isDark ? 'text-white/40' : 'text-slate-400',
-                'group-hover:opacity-100',
-              ].join(' ')}
-            >
-              Explore
-            </span>
-          </NavLink>
+      <nav className="flex-1 space-y-4">
+        {navigationSections.map((section) => (
+          <div key={section.title} className="space-y-2">
+            <div className="px-4">
+              <h3 className="text-xs uppercase tracking-[0.3em] theme-text-muted font-semibold">
+                {section.title}
+              </h3>
+            </div>
+            <div className="space-y-1">
+              {section.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    [
+                      'liquid-interactive group flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200',
+                      item.highlight
+                        ? isDark
+                          ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-400/30 text-purple-200 hover:ring-purple-300/50'
+                          : 'bg-gradient-to-r from-purple-100/80 to-pink-100/80 border-purple-300/40 text-purple-700 hover:ring-purple-300/60'
+                        : isDark ? 'hover:ring-pink-400/50 text-white/75 hover:text-white' : 'hover:ring-pink-400/50 text-slate-600 hover:text-slate-900',
+                      isActive && !item.highlight
+                        ? isDark
+                          ? 'ring-2 ring-cyan-300/45 bg-white/10 text-white hover:ring-cyan-300/55'
+                          : 'ring-2 ring-sky-400/50 bg-white/90 text-slate-900 hover:ring-sky-400/60'
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')
+                  }
+                  title={item.description}
+                >
+                  <span className="text-base">{item.icon}</span>
+                  <div className="flex-1">
+                    <span className="block">{item.name}</span>
+                    <span className={`text-xs ${isDark ? 'text-white/40' : 'text-slate-400'} group-hover:text-current transition-colors`}>
+                      {item.description}
+                    </span>
+                  </div>
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.3em] theme-text-muted">Coming Soon</p>
-        <DisabledMenu
-          icon="📈"
-          name="Growth Pulse"
-          description="Workflow nudges & launch analytics tuned by live performance data."
-        />
-        {futureFeatures.map((feature) => (
-          <DisabledMenu
-            key={feature.name}
-            icon={feature.icon}
-            name={feature.name}
-            description={feature.description}
-          />
-        ))}
+        <p className="text-xs uppercase tracking-[0.3em] theme-text-muted px-4">Coming Soon</p>
+        <div className="space-y-1">
+          {futureFeatures.map((feature) => (
+            <DisabledMenu
+              key={feature.name}
+              icon={feature.icon}
+              name={feature.name}
+              description={feature.description}
+            />
+          ))}
+        </div>
       </div>
 
       <div

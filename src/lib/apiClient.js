@@ -1,5 +1,46 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
 
+// Initialize user session
+function getUserHeaders() {
+  let userId = localStorage.getItem('growth-os-user-id');
+  let sessionId = localStorage.getItem('growth-os-session-id');
+
+  if (!userId) {
+    userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('growth-os-user-id', userId);
+  }
+
+  if (!sessionId) {
+    sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('growth-os-session-id', sessionId);
+
+    // Start analytics session
+    startAnalyticsSession();
+  }
+
+  return {
+    'X-User-ID': userId,
+    'X-Session-ID': sessionId
+  };
+}
+
+// Start analytics session
+async function startAnalyticsSession() {
+  try {
+    const response = await fetch(`${API_BASE}/analytics/session`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...getUserHeaders()
+      }
+    });
+    return response.ok;
+  } catch (error) {
+    console.warn('Failed to start analytics session:', error);
+    return false;
+  }
+}
+
 async function handleResponse(response) {
   if (!response.ok) {
     let detail = response.statusText;
@@ -19,6 +60,7 @@ export async function transcribeFile(file) {
   formData.append('file', file);
   const response = await fetch(`${API_BASE}/transcribe`, {
     method: 'POST',
+    headers: getUserHeaders(),
     body: formData,
   });
   return handleResponse(response);
@@ -55,6 +97,7 @@ export async function generateTTS({
   formData.append('to_workspace', String(toWorkspace));
   const response = await fetch(`${API_BASE}/tts`, {
     method: 'POST',
+    headers: getUserHeaders(),
     body: formData,
   });
   return handleResponse(response);
@@ -167,7 +210,10 @@ export async function fetchWorkflows() {
 export async function createWorkflow({ name, nodes, edges, notes = '', layout = {} }) {
   const response = await fetch(`${API_BASE}/workflows`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...getUserHeaders()
+    },
     body: JSON.stringify({ name, nodes, edges, notes, layout }),
   });
   return handleResponse(response);
@@ -185,7 +231,10 @@ export async function updateWorkflow({ id, name, nodes, edges, notes, layout }) 
 export async function runWorkflow({ id, payload }) {
   const response = await fetch(`${API_BASE}/workflows/${id}/run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...getUserHeaders()
+    },
     body: JSON.stringify(payload ?? {}),
   });
   return handleResponse(response);
@@ -207,6 +256,93 @@ export async function updateKnowledge(content) {
 
 export async function fetchVoices() {
   const response = await fetch(`${API_BASE}/voices`);
+  return handleResponse(response);
+}
+
+// Analytics functions
+export async function trackEvent(eventType, metadata = {}) {
+  const formData = new FormData();
+  formData.append('event_type', eventType);
+  formData.append('metadata', JSON.stringify(metadata));
+
+  try {
+    const response = await fetch(`${API_BASE}/analytics/track`, {
+      method: 'POST',
+      headers: getUserHeaders(),
+      body: formData,
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.warn('Failed to track event:', error);
+    return null;
+  }
+}
+
+export async function fetchUserInsights() {
+  const response = await fetch(`${API_BASE}/analytics/user`, {
+    method: 'GET',
+    headers: getUserHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function fetchAnalyticsDashboard() {
+  const response = await fetch(`${API_BASE}/analytics/dashboard`);
+  return handleResponse(response);
+}
+
+// Credits functions
+export async function fetchUserQuota() {
+  const response = await fetch(`${API_BASE}/credits/quota`, {
+    method: 'GET',
+    headers: getUserHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function fetchPricingTiers() {
+  const response = await fetch(`${API_BASE}/credits/pricing`);
+  return handleResponse(response);
+}
+
+export async function upgradeSubscription(tier) {
+  const formData = new FormData();
+  formData.append('tier', tier);
+
+  const response = await fetch(`${API_BASE}/credits/upgrade`, {
+    method: 'POST',
+    headers: getUserHeaders(),
+    body: formData,
+  });
+  return handleResponse(response);
+}
+
+// Workflow templates functions
+export async function fetchWorkflowTemplates() {
+  const response = await fetch(`${API_BASE}/workflows/templates`, {
+    method: 'GET',
+    headers: getUserHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function getWorkflowTemplate(templateId) {
+  const response = await fetch(`${API_BASE}/workflows/templates/${templateId}`, {
+    method: 'GET',
+    headers: getUserHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function useWorkflowTemplate(templateId, workflowName) {
+  const formData = new FormData();
+  formData.append('workflow_name', workflowName);
+
+  const response = await fetch(`${API_BASE}/workflows/templates/${templateId}/use`, {
+    method: 'POST',
+    headers: getUserHeaders(),
+    body: formData,
+  });
   return handleResponse(response);
 }
 
