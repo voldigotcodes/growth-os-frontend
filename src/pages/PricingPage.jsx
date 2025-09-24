@@ -154,20 +154,24 @@ export default function PricingPage() {
 
           return (
             <GlassCard
-              key={tier.tier}
-              className={`relative overflow-hidden ${
-                tier.popular
-                  ? 'ring-2 ring-purple-500/50 bg-gradient-to-b from-purple-500/10 to-transparent'
-                  : ''
-              }`}
-            >
-              {tier.popular && (
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1 rounded-full text-sm font-medium">
-                    Most Popular
-                  </div>
-                </div>
-              )}
+  key={tier.tier}
+  className={`relative overflow-hidden pt-8 ${
+    tier.popular
+      ? 'ring-2 ring-purple-500/50 bg-gradient-to-b from-purple-500/10 to-transparent'
+      : ''
+  }`}
+>
+  {tier.popular && (
+    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full">
+      <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white 
+                      px-1.5 py-0.5 whitespace-nowrap text-[1px] 
+                      sm:px-3 sm:py-1 sm:text-sm 
+                      md:px-4 md:py-1.5 md:text-base 
+                      rounded-full font-medium shadow-md">
+        Most Popular
+      </div>
+    </div>
+  )}
 
               <div className="text-center mb-6 mt-2">
                 <h3 className={`text-xl font-bold ${labelText} mb-2`}>{tier.name}</h3>

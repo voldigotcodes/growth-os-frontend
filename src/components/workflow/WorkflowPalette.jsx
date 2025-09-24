@@ -27,23 +27,25 @@ function WorkflowPalette({ tools, onAdd }) {
               event.dataTransfer.effectAllowed = 'move';
             }}
             onClick={() => onAdd?.(tool)}
-            className="liquid-interactive flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-xs"
+            className="liquid-interactive flex w-full items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-left text-xs"
             aria-label={`Add ${tool.label}`}
           >
-            <span className="text-base" aria-hidden>
+            <span className="text-lg" aria-hidden>
               {tool.icon ?? '✨'}
             </span>
-            <div className="flex flex-1 flex-col gap-1">
-              <p className="text-sm font-semibold theme-text-primary">{tool.label}</p>
-              <div className="flex flex-wrap gap-1 text-[10px] uppercase tracking-[0.3em] theme-text-muted">
-                {tool.inputs?.length ? (
-                  <span className="rounded-full border border-white/15 px-2 py-[2px]">In: {tool.inputs.join(', ')}</span>
-                ) : (
-                  <span className="rounded-full border border-white/15 px-2 py-[2px]">Source</span>
-                )}
-                {tool.outputs?.length ? (
-                  <span className="rounded-full border border-white/15 px-2 py-[2px]">Out: {tool.outputs.join(', ')}</span>
-                ) : null}
+            <div className="flex flex-1 items-center justify-between gap-3">
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-semibold theme-text-primary">{tool.label}</p>
+                <div className="flex flex-wrap gap-1 text-[10px] uppercase tracking-[0.3em] theme-text-muted">
+                  {tool.inputs?.length ? (
+                    <span className="rounded-full border border-white/15 px-2 py-[2px]">In: {tool.inputs.join(', ')}</span>
+                  ) : (
+                    <span className="rounded-full border border-white/15 px-2 py-[2px]">Source</span>
+                  )}
+                  {tool.outputs?.length ? (
+                    <span className="rounded-full border border-white/15 px-2 py-[2px]">Out: {tool.outputs.join(', ')}</span>
+                  ) : null}
+                </div>
               </div>
             </div>
             <span className="text-[10px] uppercase tracking-[0.3em] theme-text-muted">Add</span>
