@@ -1,31 +1,32 @@
 import { NavLink } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { usePreferences } from '../context/PreferencesContext.jsx';
+import { useProfile } from '../context/ProfileContext.jsx';
 import DisabledMenu from './DisabledMenu.jsx';
 
 const navigationSections = [
   {
     title: 'Studio',
     items: [
-      { name: 'Dashboard', description: 'Growth metrics & insights', glyph: 'DB', to: '/dashboard' },
-      { name: 'Inspiration Vault', description: 'Collect competitor ads', glyph: 'IV', to: '/download' },
-      { name: 'Script Polish', description: 'Refine transcripts', glyph: 'SP', to: '/transcribe' },
-      { name: 'Voice Studio', description: 'Generate AI voiceovers', glyph: 'VS', to: '/tts' },
+      { name: 'Dashboard', description: 'Growth metrics & insights', icon: '📊', to: '/dashboard' },
+      { name: 'Inspiration Vault', description: 'Collect competitor ads', icon: '💡', to: '/download' },
+      { name: 'Script Polish', description: 'Refine transcripts', icon: '✏️', to: '/transcribe' },
+      { name: 'Voice Studio', description: 'Generate AI voiceovers', icon: '🎙️', to: '/tts' },
     ]
   },
   {
     title: 'Automate',
     items: [
-      { name: 'Workflows', description: 'Visual automation builder', glyph: 'WF', to: '/workflows' },
-      { name: 'Workspace', description: 'Saved drafts & exports', glyph: 'WS', to: '/workspace' },
+      { name: 'Workflows', description: 'Visual automation builder', icon: '🔗', to: '/workflows' },
+      { name: 'Workspace', description: 'Saved drafts & exports', icon: '📁', to: '/workspace' },
     ]
   },
   {
     title: 'Account',
     items: [
-      { name: 'Knowledge', description: 'AI context & prompts', glyph: 'KN', to: '/knowledge' },
-      { name: 'Settings', description: 'Profile & preferences', glyph: 'ST', to: '/settings' },
-      { name: 'Upgrade', description: 'Pricing & billing', glyph: 'UP', to: '/pricing', highlight: true },
+      { name: 'Knowledge', description: 'AI context & prompts', icon: '🧠', to: '/knowledge' },
+      { name: 'Settings', description: 'Profile & preferences', icon: '⚙️', to: '/settings' },
+      { name: 'Upgrade', description: 'Pricing & billing', icon: '💎', to: '/pricing', highlight: true },
     ]
   }
 ];
@@ -39,6 +40,7 @@ const futureFeatures = [
 export default function Sidebar() {
   const { theme, toggleTheme } = useTheme();
   const { preferences } = usePreferences();
+  const { displayName, companyName } = useProfile();
   const isDark = theme === 'dark';
 
   return (
@@ -54,10 +56,10 @@ export default function Sidebar() {
       <div className="shrink-0 space-y-4 px-6 py-10">
         <div className="inline-flex items-center gap-2 rounded-full border border-current/10 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-widest text-current/70">
           <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.45)]"></span>
-          Growth OS Studio
+          {companyName} Studio
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold theme-text-primary">Launch ads with Voldi&apos;s workflow</h1>
+          <h1 className="text-2xl font-semibold theme-text-primary">Launch ads with {displayName}&apos;s workflow</h1>
           <p className="text-sm leading-relaxed theme-text-muted">
             Move from swipe file to polished creative without bouncing between tools.
           </p>
@@ -164,7 +166,7 @@ export default function Sidebar() {
             isDark ? 'text-white/70' : 'text-slate-600',
           ].join(' ')}
         >
-          <p className="text-xs uppercase tracking-[0.3em] theme-text-muted">Voldi&apos;s Tip</p>
+          <p className="text-xs uppercase tracking-[0.3em] theme-text-muted">{displayName}&apos;s Tip</p>
           <p className="mt-2 text-sm theme-text-secondary">
             Tag every winning hook as soon as you import it—future you will thank you at launch time.
           </p>

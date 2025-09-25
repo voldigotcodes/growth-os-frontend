@@ -4,19 +4,14 @@ import PrimaryButton from '../components/PrimaryButton.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useToast } from '../components/ToastContext.jsx';
 import { usePreferences } from '../context/PreferencesContext.jsx';
+import { useProfile } from '../context/ProfileContext.jsx';
 
 export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
   const { addToast } = useToast();
   const { preferences, updatePreference, resetPreferences } = usePreferences();
+  const { profile, updateProfile, updateMultipleFields, resetProfile } = useProfile();
   const isDark = theme === 'dark';
-
-  const [profile, setProfile] = useState({
-    name: 'Creative Director',
-    email: 'creator@growthstudio.com',
-    company: 'Growth Studio',
-    timezone: 'America/New_York',
-  });
 
 
   const subtleText = isDark ? 'text-white/60' : 'text-slate-500';
@@ -26,13 +21,12 @@ export default function SettingsPage() {
     : 'liquid-button border-purple-200/70 bg-purple-100/80 text-purple-600 hover:ring-purple-200/60';
 
   const handleProfileChange = (field, value) => {
-    setProfile((prev) => ({ ...prev, [field]: value }));
+    updateProfile(field, value);
   };
 
 
   const handleSaveSettings = () => {
-    // Save profile to localStorage (preferences are auto-saved by context)
-    localStorage.setItem('growth-os-profile', JSON.stringify(profile));
+    // Profile is auto-saved by context, preferences are auto-saved by context
     addToast('Settings saved successfully!', 'success');
   };
 
@@ -64,6 +58,7 @@ export default function SettingsPage() {
                   type="text"
                   value={profile.name}
                   onChange={(e) => handleProfileChange('name', e.target.value)}
+                  placeholder="Your display name"
                   className={[
                     'w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                     isDark
@@ -81,6 +76,7 @@ export default function SettingsPage() {
                   type="email"
                   value={profile.email}
                   onChange={(e) => handleProfileChange('email', e.target.value)}
+                  placeholder="your.email@company.com"
                   className={[
                     'w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                     isDark
@@ -98,6 +94,7 @@ export default function SettingsPage() {
                   type="text"
                   value={profile.company}
                   onChange={(e) => handleProfileChange('company', e.target.value)}
+                  placeholder="e.g. Growth Studio, Acme Corp"
                   className={[
                     'w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                     isDark
@@ -329,7 +326,7 @@ export default function SettingsPage() {
                 className="liquid-button w-full text-sm border-orange-400/60 bg-orange-500/15 text-orange-200 hover:ring-orange-300/50"
                 onClick={() => {
                   if (confirm('This will reset all settings to defaults. Continue?')) {
-                    localStorage.removeItem('growth-os-profile');
+                    resetProfile();
                     resetPreferences();
                     addToast('Settings reset to defaults!', 'success');
                   }

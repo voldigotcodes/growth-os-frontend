@@ -1,4 +1,6 @@
 import { Fragment, memo, useMemo } from 'react';
+import { downloadOutputWithNotification, isDownloadableOutput, generateOutputFilename } from '../../utils/downloadHelpers.js';
+import { useToast } from '../ToastContext.jsx';
 
 function statusBadge(status) {
   switch (status) {
@@ -31,6 +33,8 @@ function normalizeCredits(value) {
 }
 
 function RunSummaryDrawer({ open, onClose, summary }) {
+  const { addToast } = useToast();
+
   if (!open) return null;
 
   const steps = summary?.node_trace ?? [];
@@ -38,16 +42,55 @@ function RunSummaryDrawer({ open, onClose, summary }) {
   const creditsUsed = useMemo(() => normalizeCredits(summary?.credits_info?.consumed), [summary]);
   const creditsRemaining = useMemo(() => normalizeCredits(summary?.credits_info?.remaining), [summary]);
 
+  // Debug mode toggle (can be controlled via URL param or localStorage)
+  const debugMode = new URLSearchParams(window.location.search).has('debug') ||
+                    localStorage.getItem('workflow-debug') === 'true';
+
+  const handleDownload = async (output) => {
+    if (debugMode) {
+      console.log('🔍 Debug Mode: Downloading output:', output);
+    }
+
+    await downloadOutputWithNotification(output, addToast, debugMode);
+  };
+
+  const handleDebugToggle = () => {
+    const newDebugState = !debugMode;
+    if (newDebugState) {
+      localStorage.setItem('workflow-debug', 'true');
+      addToast('Debug mode enabled - check console for download details', 'info');
+    } else {
+      localStorage.removeItem('workflow-debug');
+      addToast('Debug mode disabled', 'info');
+    }
+    // Reload to apply changes
+    window.location.reload();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/50 backdrop-blur-xl">
       <div className="glass-panel liquid relative flex h-full w-full max-w-lg flex-col overflow-hidden px-8 py-10 shadow-[0_40px_80px_rgba(15,23,42,0.45)]">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-6 top-6 text-sm uppercase tracking-[0.35em] text-white/60 hover:text-white"
-        >
-          Close
-        </button>
+        <div className="absolute right-6 top-6 flex gap-3">
+          <button
+            type="button"
+            onClick={handleDebugToggle}
+            className={`text-xs uppercase tracking-[0.35em] transition-colors ${
+              debugMode
+                ? 'text-orange-300 hover:text-orange-200'
+                : 'text-white/40 hover:text-white/60'
+            }`}
+            title={debugMode ? 'Disable debug mode' : 'Enable debug mode'}
+          >
+            Debug
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-sm uppercase tracking-[0.35em] text-white/60 hover:text-white"
+          >
+            Close
+          </button>
+        </div>
         <header className="space-y-3 pr-10">
           <h2 className="text-2xl font-semibold text-white">Run Summary</h2>
           <p className="text-sm text-white/70">
@@ -104,20 +147,47 @@ function RunSummaryDrawer({ open, onClose, summary }) {
 
         {summary?.outputs?.length ? (
           <section className="mt-6 space-y-2 text-sm text-white/80">
-            <h3 className="text-base font-semibold text-white">Generated Outputs</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-white">Generated Outputs</h3>
+              {debugMode && (
+                <div className="text-xs text-orange-300/70 font-mono">
+                  Debug ON
+                </div>
+              )}
+            </div>
             <ul className="space-y-2">
               {summary.outputs.map((output) => {
                 const url = output?.url ?? output?.value?.url;
                 const label = output?.label ?? `${output.node_id} · ${output.port_id}`;
+                const filename = generateOutputFilename(output);
+                const hasValidUrl = isDownloadableOutput(output);
+
                 return (
                   <li key={`${output.node_id}-${output.port_id}`} className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/8 px-3 py-2">
-                    <span className="truncate text-xs text-white/75">{label}</span>
-                    {url ? (
-                      <a href={url} target="_blank" rel="noreferrer" className="text-xs uppercase tracking-[0.3em] text-sky-200">
-                        Open
-                      </a>
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate text-xs text-white/75">{label}</div>
+                      <div className="truncate text-[10px] text-white/50 mt-0.5">{filename}</div>
+                      {debugMode && (
+                        <div className="text-[9px] text-orange-300/70 mt-1 font-mono">
+                          URL: {url ? url.substring(0, 60) + '...' : 'None'}
+                        </div>
+                      )}
+                    </div>
+                    {hasValidUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(output)}
+                        className="text-xs uppercase tracking-[0.3em] text-sky-200 hover:text-sky-100 transition-colors"
+                      >
+                        Download
+                      </button>
                     ) : (
-                      <span className="text-xs uppercase tracking-[0.3em] text-white/50">No link</span>
+                      <div className="text-center">
+                        <span className="text-xs uppercase tracking-[0.3em] text-red-400/70">No URL</span>
+                        {debugMode && (
+                          <div className="text-[9px] text-red-300/50 mt-1">Check console</div>
+                        )}
+                      </div>
                     )}
                   </li>
                 );

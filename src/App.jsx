@@ -5,8 +5,10 @@ import Sidebar from './components/Sidebar.jsx';
 import OnboardingTour from './components/OnboardingTour.jsx';
 import { ThemeContext } from './context/ThemeContext.jsx';
 import { usePreferences } from './context/PreferencesContext.jsx';
+import { useProfile } from './context/ProfileContext.jsx';
 import { FeatureFlagProvider } from './context/FeatureFlagContext.jsx';
 import { StatusProvider } from './context/StatusContext.jsx';
+import { ProfileProvider } from './context/ProfileContext.jsx';
 import GlobalCommandPalette from './components/GlobalCommandPalette.jsx';
 import ShortcutHints from './components/ShortcutHints.jsx';
 
@@ -24,6 +26,7 @@ function Shell() {
   const [theme, setTheme] = useState('dark');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { preferences } = usePreferences();
+  const { displayName } = useProfile();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -88,7 +91,7 @@ function Shell() {
           <div className="flex flex-col gap-8 md:gap-12 px-8 py-8 md:px-12 md:py-12">
             <div className="glass-panel flex flex-wrap items-center justify-between gap-4 px-6 py-4 text-sm animate-fade-in">
               <div>
-                <p className="text-base font-medium theme-text-primary">Welcome back, creator.</p>
+                <p className="text-base font-medium theme-text-primary">Welcome back, {displayName}.</p>
                 <p className="theme-text-muted text-xs">
                   Import a competitor clip, shape the script, and ship the ad without leaving this glass dashboard.
                 </p>
@@ -129,10 +132,12 @@ function Shell() {
 
 export default function App() {
   return (
-    <FeatureFlagProvider>
-      <StatusProvider>
-        <Shell />
-      </StatusProvider>
-    </FeatureFlagProvider>
+    <ProfileProvider>
+      <FeatureFlagProvider>
+        <StatusProvider>
+          <Shell />
+        </StatusProvider>
+      </FeatureFlagProvider>
+    </ProfileProvider>
   );
 }

@@ -53,7 +53,7 @@ function WorkflowLibrary({ workflows, activeId, onSelect, onDelete, onDeleteAll 
                 <button
                   type="button"
                   onClick={() => onDelete?.(workflow.id)}
-                  className="absolute -right-2 -top-2 hidden h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-slate-900/70 text-base text-white/80 shadow-lg transition group-hover:flex hover:bg-rose-500/80"
+                  className="absolute -right-1 -top-2  h-7 w-7 items-center justify-center rounded-full hidden border-white/30 border text-base text-white/80 transition group-hover:flex hover:bg-rose-500/80"
                   aria-label={`Delete ${workflow.name}`}
                 >
                   ×

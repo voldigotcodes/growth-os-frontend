@@ -342,6 +342,7 @@ body.theme-light::after {
   .theme-text-muted {
     color: var(--text-muted);
   }
+  
 
   /* Liquid Glass tinting for emphasis */
   .glass-tint-primary {

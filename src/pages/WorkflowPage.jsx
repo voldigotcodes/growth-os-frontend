@@ -20,6 +20,7 @@ import OnboardingOverlay from '../components/workflow/OnboardingOverlay.jsx';
 import QuickStartTemplates from '../components/workflow/QuickStartTemplates.jsx';
 import WorkflowHistory from '../components/workflow/WorkflowHistory.jsx';
 import RunSummaryDrawer from '../components/workflow/RunSummaryDrawer.jsx';
+import OutputDownloadModal from '../components/workflow/OutputDownloadModal.jsx';
 import useSmartDefaults from '../hooks/useSmartDefaults.js';
 import { useFeatureFlags } from '../context/FeatureFlagContext.jsx';
 import { useStatus, useStatusContext } from '../context/StatusContext.jsx';
@@ -168,6 +169,8 @@ function WorkflowPageInner() {
   const [runHistory, setRunHistory] = useState([]);
   const [runSummary, setRunSummary] = useState(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [outputModalOpen, setOutputModalOpen] = useState(false);
+  const [outputModalData, setOutputModalData] = useState([]);
   const [templateLoadingId, setTemplateLoadingId] = useState(null);
   const [quota, setQuota] = useState(null);
   const [selectedNodeId, setSelectedNodeId] = useState(null);
@@ -690,15 +693,59 @@ function WorkflowPageInner() {
         handleHistoryEntrySelect(entry);
         return;
       }
-      outputs.forEach((output) => {
-        const url = output?.url ?? output?.value?.url;
-        if (url) {
-          window.open(url, '_blank', 'noreferrer');
-        }
-      });
+
+      // Check if we're already in the run summary (summary is open and matches this entry)
+      const isInRunSummary = summaryOpen && runSummary && (
+        runSummary === entry.summary ||
+        runSummary.workflow?.id === entry.workflowId ||
+        runSummary.id === entry.id
+      );
+
+      if (isInRunSummary) {
+        // If already in run summary, directly download all outputs
+        outputs.forEach(async (output) => {
+          const url = output?.url ?? output?.value?.url;
+          if (url) {
+            try {
+              const response = await fetch(url);
+              const blob = await response.blob();
+              const downloadUrl = window.URL.createObjectURL(blob);
+
+              const filename = output?.filename ??
+                              output?.label ??
+                              `output-${output.node_id}-${output.port_id}${getFileExtension(url)}`;
+
+              const link = document.createElement('a');
+              link.href = downloadUrl;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+
+              window.URL.revokeObjectURL(downloadUrl);
+            } catch (error) {
+              console.error('Download failed:', error);
+            }
+          }
+        });
+      } else {
+        // Show modal for output selection
+        setOutputModalData(outputs);
+        setOutputModalOpen(true);
+      }
     },
-    [addToast, handleHistoryEntrySelect]
+    [addToast, handleHistoryEntrySelect, summaryOpen, runSummary]
   );
+
+  const getFileExtension = useCallback((url) => {
+    try {
+      const pathname = new URL(url).pathname;
+      const extension = pathname.split('.').pop();
+      return extension && extension !== pathname ? `.${extension}` : '';
+    } catch {
+      return '';
+    }
+  }, []);
 
   const handleHistoryRerun = useCallback(
     (entry) => {
@@ -982,6 +1029,11 @@ function WorkflowPageInner() {
       </div>
 
       <RunSummaryDrawer open={summaryOpen} onClose={() => setSummaryOpen(false)} summary={runSummary} />
+      <OutputDownloadModal
+        open={outputModalOpen}
+        onClose={() => setOutputModalOpen(false)}
+        outputs={outputModalData}
+      />
     </>
   );
 }

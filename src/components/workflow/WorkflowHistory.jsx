@@ -60,23 +60,18 @@ function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onVie
                     onSelect?.(entry);
                   }
                 }}
-                className="liquid-interactive flex w-full flex-col gap-3 rounded-2xl px-4 py-3 text-left text-sm hover:ring-sky-200/60"
+                className="liquid-interactive flex w-full flex-col gap-3 px-4 py-3 text-left text-sm hover:ring-sky-200/60"
               >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   <span
-                    className={`mt-0.5 inline-flex h-6 min-w-[72px] items-center justify-center rounded-full px-2 text-[10px] font-semibold uppercase tracking-[0.3em] ${
+                    className={`mt-0.5 inline-flex h-6 min-w-[80px] items-center justify-center rounded-full px-2 text-[8px] font-semibold uppercase tracking-[0.3em] ${
                       STATUS_CLASSES[entry.status] ?? STATUS_CLASSES.completed
                     }`}
                   >
                     {entry.status}
                   </span>
-                  <div className="space-y-1">
-                    <p className="font-semibold theme-text-primary">{entry.workflowName}</p>
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">
-                      {new Date(entry.startedAt).toLocaleString()} · {entry.durationLabel}
-                    </p>
-                  </div>
+                 
                 </div>
                 <div className="text-right text-[11px] uppercase tracking-[0.3em] theme-text-muted">
                   <p>{entry.status === 'failed' ? 'Review' : 'View'}</p>
@@ -84,7 +79,13 @@ function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onVie
                     <p className="mt-1 text-white/70">-{formatCredits(entry.credits)} credits</p>
                   )}
                 </div>
-              </div>
+                </div>
+                   <div className="space-y-1">
+                    <p className="font-semibold theme-text-primary">{entry.workflowName}</p>
+                    <p className="text-[11px] uppercase tracking-[0.3em] theme-text-primary/60">
+                      {new Date(entry.startedAt).toLocaleString()} · {entry.durationLabel}
+                    </p>
+                  </div>
               <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-white/70">
                 <button
                   type="button"
@@ -115,17 +116,17 @@ function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onVie
                   className="rounded-full border border-white/20 px-3 py-1 text-xs hover:border-pink-300/60 hover:text-pink-200"
                 >
                   View Logs
+                  </button>
+                  <button
+                  type="button"
+                    onClick={(event) => {event.stopPropagation();
+                    onDelete?.(entry);}}
+                  className="rounded-full border border-white/20 px-3 py-1 text-xs hover:bg-rose-500/80"
+                >
+                  Delete Run
                 </button>
-              </div>
+                </div>
             </div>
-              <button
-                type="button"
-                onClick={() => onDelete?.(entry)}
-                className="absolute -right-2 -top-2 hidden h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-slate-900/70 text-sm text-white/80 shadow-lg transition group-hover:flex hover:bg-rose-500/80"
-                aria-label={`Delete run ${entry.workflowName}`}
-              >
-                ×
-              </button>
             </div>
           ))}
         </div>
