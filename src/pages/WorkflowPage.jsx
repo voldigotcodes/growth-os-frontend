@@ -30,6 +30,10 @@ import {
   useWorkflowTemplate,
   fetchUserQuota,
   fetchWorkflowRuns,
+  deleteWorkflow,
+  clearWorkflows,
+  deleteWorkflowRun,
+  clearWorkflowRuns,
 } from '../lib/apiClient.js';
 
 const TOOL_ICONS = {
@@ -749,6 +753,63 @@ function WorkflowPageInner() {
     [setNodes]
   );
 
+  const handleDeleteWorkflowSaved = useCallback(
+    async (id) => {
+      try {
+        await deleteWorkflow(id);
+        setWorkflows((prev) => prev.filter((workflow) => workflow.id !== id));
+        if (selectedWorkflowId === id) {
+          handleClearCanvas();
+        }
+        addToast('Automation deleted.');
+      } catch (error) {
+        addToast(error.message || 'Unable to delete workflow.', 'error');
+      }
+    },
+    [addToast, handleClearCanvas, selectedWorkflowId]
+  );
+
+  const handleClearWorkflowsList = useCallback(async () => {
+    try {
+      await clearWorkflows();
+      setWorkflows([]);
+      handleClearCanvas();
+      addToast('All automations cleared.');
+    } catch (error) {
+      addToast(error.message || 'Unable to clear workflows.', 'error');
+    }
+  }, [addToast, handleClearCanvas]);
+
+  const handleDeleteRunEntry = useCallback(
+    async (entry) => {
+      try {
+        await deleteWorkflowRun(entry.id);
+        setRunHistory((prev) => prev.filter((item) => item.id !== entry.id));
+        if (runSummary && summaryOpen) {
+          if (runSummary === entry.summary || runSummary.workflow?.id === entry.workflowId) {
+            setSummaryOpen(false);
+          }
+        }
+        addToast('Run removed from history.');
+      } catch (error) {
+        addToast(error.message || 'Unable to delete run.', 'error');
+      }
+    },
+    [addToast, runSummary, summaryOpen]
+  );
+
+  const handleClearRunHistory = useCallback(async () => {
+    try {
+      await clearWorkflowRuns();
+      setRunHistory([]);
+      setSummaryOpen(false);
+      setRunSummary(null);
+      addToast('Run history cleared.');
+    } catch (error) {
+      addToast(error.message || 'Unable to clear run history.', 'error');
+    }
+  }, [addToast]);
+
   return (
     <>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
@@ -759,55 +820,21 @@ function WorkflowPageInner() {
           </p>
         </header>
 
-        <section className="grid gap-8 lg:grid-cols-[minmax(0,1.35fr),minmax(320px,0.65fr)]">
-          <GlassCard
-            title="Build Your Flow"
-            subtitle="Drop tools onto the canvas, connect matching ports, and watch data pulse through the system."
-            className="min-h-[520px]"
-            allowOverflow
-            interactive={false}
-          >
-            <div className="relative h-[520px]">
-            <WorkflowCanvas
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={handleConnect}
-              onDropTool={handleDropTool}
-              invalidHandles={invalidHandles}
-              validateConnection={validateConnection}
-              onSelectionChange={handleSelectionChange}
-            />
-            {canvasEmpty ? <OnboardingOverlay /> : null}
-          </div>
-        </GlassCard>
+        <WorkflowToolbar
+          onSave={handleSaveWorkflow}
+          onRun={handleRunWorkflow}
+          onDeleteSelection={handleDeleteSelection}
+          onClear={handleClearCanvas}
+          running={isRunning}
+          saving={isSaving}
+          canRun={canRun}
+          estimatedCost={estimatedCostLabel}
+          hasSelection={hasSelection}
+        />
 
-        <div className="flex flex-col gap-6">
-          <WorkflowToolbar
-              onSave={handleSaveWorkflow}
-              onRun={handleRunWorkflow}
-              onDeleteSelection={handleDeleteSelection}
-              onClear={handleClearCanvas}
-              running={isRunning}
-              saving={isSaving}
-              canRun={canRun}
-              estimatedCost={estimatedCostLabel}
-              hasSelection={hasSelection}
-            />
-
-            <WorkflowNodeConfigPanel
-              node={selectedNode}
-              onChange={handleConfigUpdate}
-            />
-
-            <WorkflowPalette tools={paletteTools} onAdd={handlePaletteAdd} />
-
-            <QuickStartTemplates
-              templates={quickTemplates}
-              onUse={handleUseTemplate}
-              loadingId={templateLoadingId}
-            />
+        <section className="grid gap-8 xl:grid-cols-[340px,minmax(0,1fr)]">
+          <div className="order-2 flex flex-col gap-6 xl:order-1">
+            <WorkflowNodeConfigPanel node={selectedNode} onChange={handleConfigUpdate} />
 
             <GlassCard title="Active Workflow" subtitle="Update the title and leave notes for collaborators.">
               <div className="space-y-4 text-sm">
@@ -842,6 +869,8 @@ function WorkflowPageInner() {
               workflows={workflows}
               activeId={selectedWorkflow?.id}
               onSelect={handleSelectWorkflow}
+              onDelete={handleDeleteWorkflowSaved}
+              onDeleteAll={handleClearWorkflowsList}
             />
 
             <WorkflowHistory
@@ -850,6 +879,43 @@ function WorkflowPageInner() {
               onRerun={handleHistoryRerun}
               onOpenOutputs={handleHistoryOpenOutputs}
               onViewLogs={handleHistoryViewLogs}
+              onDelete={handleDeleteRunEntry}
+              onDeleteAll={handleClearRunHistory}
+            />
+          </div>
+
+          <div className="order-1 flex flex-col gap-6 xl:order-2">
+            <GlassCard
+              title="Build Your Flow"
+              subtitle="Drop tools onto the canvas, connect matching ports, and watch data pulse through the system."
+              className="min-h-0"
+              allowOverflow
+              interactive={false}
+            >
+              <div className="space-y-5">
+                <div className="relative h-[460px]">
+                  <WorkflowCanvas
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={handleConnect}
+                    onDropTool={handleDropTool}
+                    invalidHandles={invalidHandles}
+                    validateConnection={validateConnection}
+                    onSelectionChange={handleSelectionChange}
+                  />
+                  {canvasEmpty ? <OnboardingOverlay /> : null}
+                </div>
+
+                <WorkflowPalette tools={paletteTools} onAdd={handlePaletteAdd} orientation="horizontal" />
+              </div>
+            </GlassCard>
+
+            <QuickStartTemplates
+              templates={quickTemplates}
+              onUse={handleUseTemplate}
+              loadingId={templateLoadingId}
             />
           </div>
         </section>

@@ -4,7 +4,7 @@ import DisabledMenu from './DisabledMenu.jsx';
 
 const navigationSections = [
   {
-    title: 'Create',
+    title: 'Studio',
     items: [
       { name: 'Dashboard', description: 'Growth metrics & insights', icon: '📊', to: '/dashboard' },
       { name: 'Inspiration', description: 'Collect competitor ads', icon: '🗂️', to: '/download' },
@@ -20,10 +20,11 @@ const navigationSections = [
     ]
   },
   {
-    title: 'Configure',
+    title: 'Account',
     items: [
-      { name: 'Knowledge', description: 'Global AI context & prompts', icon: '📚', to: '/knowledge' },
-      { name: 'Upgrade', description: 'Pricing plans & billing', icon: '🚀', to: '/pricing', highlight: true },
+      { name: 'Knowledge', description: 'AI context & prompts', icon: '📚', to: '/knowledge' },
+      { name: 'Settings', description: 'Profile & preferences', icon: '⚙️', to: '/settings' },
+      { name: 'Upgrade', description: 'Pricing & billing', icon: '🚀', to: '/pricing', highlight: true },
     ]
   }
 ];

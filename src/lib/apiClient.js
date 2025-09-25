@@ -228,6 +228,20 @@ export async function updateWorkflow({ id, name, nodes, edges, notes, layout }) 
   return handleResponse(response);
 }
 
+export async function deleteWorkflow(id) {
+  const response = await fetch(`${API_BASE}/workflows/${id}`, {
+    method: 'DELETE',
+  });
+  return handleResponse(response);
+}
+
+export async function clearWorkflows() {
+  const response = await fetch(`${API_BASE}/workflows`, {
+    method: 'DELETE',
+  });
+  return handleResponse(response);
+}
+
 export async function runWorkflow({ id, payload }) {
   const response = await fetch(`${API_BASE}/workflows/${id}/run`, {
     method: 'POST',
@@ -236,6 +250,20 @@ export async function runWorkflow({ id, payload }) {
       ...getUserHeaders()
     },
     body: JSON.stringify(payload ?? {}),
+  });
+  return handleResponse(response);
+}
+
+export async function deleteWorkflowRun(id) {
+  const response = await fetch(`${API_BASE}/workflows/runs/${id}`, {
+    method: 'DELETE',
+  });
+  return handleResponse(response);
+}
+
+export async function clearWorkflowRuns() {
+  const response = await fetch(`${API_BASE}/workflows/runs`, {
+    method: 'DELETE',
   });
   return handleResponse(response);
 }

@@ -10,6 +10,7 @@ import KnowledgePage from './pages/KnowledgePage.jsx';
 import WorkflowPage from './pages/WorkflowPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import PricingPage from './pages/PricingPage.jsx';
+import SettingsPage from './pages/SettingsPage.jsx';
 import { ThemeContext } from './context/ThemeContext.jsx';
 
 export default function App() {
@@ -74,6 +75,7 @@ export default function App() {
               <Route path="/knowledge" element={<KnowledgePage />} />
               <Route path="/workflows" element={<WorkflowPage />} />
               <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>

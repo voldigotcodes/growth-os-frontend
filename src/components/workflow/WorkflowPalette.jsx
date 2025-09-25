@@ -1,10 +1,81 @@
 import { memo } from 'react';
 
-function WorkflowPalette({ tools, onAdd }) {
+function ToolCard({ tool, onAdd, orientation }) {
+  const handleDrag = (event) => {
+    event.dataTransfer.setData('application/reactflow', JSON.stringify(tool));
+    event.dataTransfer.setData('text/plain', tool.type);
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  return (
+    <button
+      key={tool.type}
+      type="button"
+      draggable
+      onDragStart={handleDrag}
+      onClick={() => onAdd?.(tool)}
+      className={`liquid-interactive flex items-start justify-between gap-4 rounded-2xl px-4 py-3 text-left text-xs backdrop-blur ${
+        orientation === 'horizontal' ? 'min-w-[220px]' : ''
+      }`}
+      aria-label={`Add ${tool.label}`}
+    >
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/15 text-base shadow-[0_6px_18px_rgba(15,23,42,0.35)]">
+          {tool.icon ?? '✨'}
+        </span>
+        <div className="space-y-1">
+          <p className="text-sm font-semibold theme-text-primary">{tool.label}</p>
+          <p className="text-[11px] text-white/65 line-clamp-2">{tool.description}</p>
+          <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.25em] text-white/60">
+            {(tool.ports?.inputs ?? []).length ? (
+              <span className="rounded-full border border-white/20 px-2 py-[2px]">
+                In {tool.ports.inputs.map((port) => port.type).join(', ')}
+              </span>
+            ) : (
+              <span className="rounded-full border border-white/20 px-2 py-[2px]">Source</span>
+            )}
+            {(tool.ports?.outputs ?? []).length ? (
+              <span className="rounded-full border border-white/20 px-2 py-[2px]">
+                Out {tool.ports.outputs.map((port) => port.type).join(', ')}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </div>
+      <span className="text-[10px] uppercase tracking-[0.3em] text-white/50">Add</span>
+    </button>
+  );
+}
+
+function WorkflowPalette({ tools, onAdd, orientation = 'grid' }) {
   if (!tools?.length) {
     return (
-      <div className="glass-panel p-6 text-sm theme-text-muted">
+      <div
+        className={
+          orientation === 'horizontal'
+            ? 'rounded-3xl border border-white/10 bg-white/5 px-4 py-6 text-sm theme-text-muted backdrop-blur'
+            : 'glass-panel p-6 text-sm theme-text-muted'
+        }
+      >
         No tools available yet.
+      </div>
+    );
+  }
+
+  if (orientation === 'horizontal') {
+    return (
+      <div className="rounded-3xl border border-white/12 bg-white/8 px-4 py-5 shadow-[0_25px_55px_rgba(15,23,42,0.28)] backdrop-blur">
+        <header className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold theme-text-primary">Tool Palette</h2>
+            <p className="text-xs theme-text-muted">Drag or tap to drop tools onto the canvas.</p>
+          </div>
+        </header>
+        <div className="flex gap-3 overflow-x-auto pb-1">
+          {tools.map((tool) => (
+            <ToolCard key={tool.type} tool={tool} onAdd={onAdd} orientation="horizontal" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -17,46 +88,7 @@ function WorkflowPalette({ tools, onAdd }) {
       </header>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
         {tools.map((tool) => (
-          <button
-            key={tool.type}
-            type="button"
-            draggable
-            onDragStart={(event) => {
-              event.dataTransfer.setData('application/reactflow', JSON.stringify(tool));
-              event.dataTransfer.setData('text/plain', tool.type);
-              event.dataTransfer.effectAllowed = 'move';
-            }}
-            onClick={() => onAdd?.(tool)}
-            className="liquid-interactive flex w-full items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-left text-xs"
-            aria-label={`Add ${tool.label}`}
-          >
-            <span className="text-lg" aria-hidden>
-              {tool.icon ?? '✨'}
-            </span>
-            <div className="flex flex-1 items-center justify-between gap-3">
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold theme-text-primary">{tool.label}</p>
-                <p className="text-[11px] text-white/70">
-                  {tool.description}
-                </p>
-                <div className="flex flex-wrap gap-1 text-[10px] uppercase tracking-[0.3em] theme-text-muted">
-                  {(tool.ports?.inputs ?? []).length ? (
-                    <span className="rounded-full border border-white/15 px-2 py-[2px]">
-                      In: {(tool.ports?.inputs ?? []).map((port) => port.type).join(', ')}
-                    </span>
-                  ) : (
-                    <span className="rounded-full border border-white/15 px-2 py-[2px]">Source</span>
-                  )}
-                  {(tool.ports?.outputs ?? []).length ? (
-                    <span className="rounded-full border border-white/15 px-2 py-[2px]">
-                      Out: {(tool.ports?.outputs ?? []).map((port) => port.type).join(', ')}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-            <span className="text-[10px] uppercase tracking-[0.3em] theme-text-muted">Add</span>
-          </button>
+          <ToolCard key={tool.type} tool={tool} onAdd={onAdd} orientation="grid" />
         ))}
       </div>
     </div>
