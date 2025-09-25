@@ -674,3 +674,35 @@ body.hide-descriptions .liquid-interactive div span:last-child {
   backdrop-filter: var(--lg-backdrop-clear);
   -webkit-backdrop-filter: var(--lg-backdrop-clear);
 }
+
+/* Custom scrollbar styling for sidebar */
+.sidebar-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.sidebar-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.sidebar-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+body.theme-light .sidebar-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+body.theme-light .sidebar-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}

@@ -44,13 +44,14 @@ export default function Sidebar() {
   return (
     <aside
       className={[
-        'relative flex h-screen w-72 flex-col gap-8 px-6 py-10 backdrop-blur-2xl transition-all duration-500 ease-out',
+        'relative flex h-screen w-72 flex-col backdrop-blur-2xl transition-all duration-500 ease-out overflow-hidden',
         isDark
           ? 'border-r border-white/10 bg-slate-900/40 text-slate-100'
           : 'border-r border-slate-200/70 bg-white/80 text-slate-700 shadow-[0_25px_55px_rgba(15,23,42,0.15)]',
       ].join(' ')}
     >
-      <div className="space-y-4">
+      {/* Sticky Header Section */}
+      <div className="shrink-0 space-y-4 px-6 py-10">
         <div className="inline-flex items-center gap-2 rounded-full border border-current/10 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-widest text-current/70">
           <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.45)]"></span>
           Growth OS Studio
@@ -93,78 +94,81 @@ export default function Sidebar() {
         </button>
       </div>
 
-      <nav className="flex-1 space-y-4">
-        {navigationSections.map((section) => (
-          <div key={section.title} className="space-y-2">
-            <div className="px-4">
-              <h3 className="text-xs uppercase tracking-[0.3em] theme-text-muted font-semibold">
-                {section.title}
-              </h3>
+      {/* Scrollable Content Section */}
+      <div className="flex-1 overflow-y-auto px-6 pb-6 pr-4 space-y-8 sidebar-scrollable">
+        <nav className="space-y-4">
+          {navigationSections.map((section) => (
+            <div key={section.title} className="space-y-2">
+              <div className="px-4">
+                <h3 className="text-xs uppercase tracking-[0.3em] theme-text-muted font-semibold">
+                  {section.title}
+                </h3>
+              </div>
+              <div className="space-y-1">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      [
+                        'liquid-interactive group flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200',
+                        item.highlight
+                          ? isDark
+                            ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-400/30 text-purple-200 hover:ring-purple-300/50'
+                            : 'bg-gradient-to-r from-purple-100/80 to-pink-100/80 border-purple-300/40 text-purple-700 hover:ring-purple-300/60'
+                          : isDark ? 'hover:ring-pink-400/50 text-white/75 hover:text-white' : 'hover:ring-sky-400/60 text-slate-600 hover:text-slate-900',
+                        isActive && !item.highlight
+                          ? isDark
+                            ? 'active-nav-item ring-2 bg-white/10 text-white'
+                            : 'active-nav-item ring-2 ring-sky-400/60 bg-sky-50/90 text-slate-900'
+                          : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')
+                    }
+                    title={item.description}
+                  >
+                    <span className="text-base">{item.icon}</span>
+                    <div className="flex-1">
+                      <span className="block">{item.name}</span>
+                      {preferences.interface.showDescriptions && (
+                        <span className={`text-xs ${isDark ? 'text-white/40' : 'text-slate-500'} group-hover:text-current transition-colors`}>
+                          {item.description}
+                        </span>
+                      )}
+                    </div>
+                  </NavLink>
+                ))}
+              </div>
             </div>
-            <div className="space-y-1">
-              {section.items.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    [
-                      'liquid-interactive group flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200',
-                      item.highlight
-                        ? isDark
-                          ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-400/30 text-purple-200 hover:ring-purple-300/50'
-                          : 'bg-gradient-to-r from-purple-100/80 to-pink-100/80 border-purple-300/40 text-purple-700 hover:ring-purple-300/60'
-                        : isDark ? 'hover:ring-pink-400/50 text-white/75 hover:text-white' : 'hover:ring-sky-400/60 text-slate-600 hover:text-slate-900',
-                      isActive && !item.highlight
-                        ? isDark
-                          ? 'active-nav-item ring-2 bg-white/10 text-white'
-                          : 'active-nav-item ring-2 ring-sky-400/60 bg-sky-50/90 text-slate-900'
-                        : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')
-                  }
-                  title={item.description}
-                >
-                  <span className="text-base">{item.icon}</span>
-                  <div className="flex-1">
-                    <span className="block">{item.name}</span>
-                    {preferences.interface.showDescriptions && (
-                      <span className={`text-xs ${isDark ? 'text-white/40' : 'text-slate-500'} group-hover:text-current transition-colors`}>
-                        {item.description}
-                      </span>
-                    )}
-                  </div>
-                </NavLink>
-              ))}
-            </div>
-          </div>
-        ))}
-      </nav>
-
-      <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.3em] theme-text-muted px-4">Coming Soon</p>
-        <div className="space-y-1">
-          {futureFeatures.map((feature) => (
-            <DisabledMenu
-              key={feature.name}
-              icon={feature.icon}
-              name={feature.name}
-              description={feature.description}
-            />
           ))}
-        </div>
-      </div>
+        </nav>
 
-      <div
-        className={[
-          'glass-panel p-4 transition-colors duration-300',
-          isDark ? 'text-white/70' : 'text-slate-600',
-        ].join(' ')}
-      >
-        <p className="text-xs uppercase tracking-[0.3em] theme-text-muted">Voldi&apos;s Tip</p>
-        <p className="mt-2 text-sm theme-text-secondary">
-          Tag every winning hook as soon as you import it—future you will thank you at launch time.
-        </p>
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.3em] theme-text-muted px-4">Coming Soon</p>
+          <div className="space-y-1">
+            {futureFeatures.map((feature) => (
+              <DisabledMenu
+                key={feature.name}
+                icon={feature.icon}
+                name={feature.name}
+                description={feature.description}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div
+          className={[
+            'glass-panel p-4 transition-colors duration-300',
+            isDark ? 'text-white/70' : 'text-slate-600',
+          ].join(' ')}
+        >
+          <p className="text-xs uppercase tracking-[0.3em] theme-text-muted">Voldi&apos;s Tip</p>
+          <p className="mt-2 text-sm theme-text-secondary">
+            Tag every winning hook as soon as you import it—future you will thank you at launch time.
+          </p>
+        </div>
       </div>
     </aside>
   );
