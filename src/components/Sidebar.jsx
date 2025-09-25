@@ -7,25 +7,25 @@ const navigationSections = [
   {
     title: 'Studio',
     items: [
-      { name: 'Dashboard', description: 'Growth metrics & insights', icon: '📊', to: '/dashboard' },
-      { name: 'Inspiration', description: 'Collect competitor ads', icon: '🗂️', to: '/download' },
-      { name: 'Script Polish', description: 'Refine transcripts into copy', icon: '✏️', to: '/transcribe' },
-      { name: 'Voice Studio', description: 'Generate AI voiceovers', icon: '🎧', to: '/tts' },
+      { name: 'Dashboard', description: 'Growth metrics & insights', glyph: 'DB', to: '/dashboard' },
+      { name: 'Inspiration Vault', description: 'Collect competitor ads', glyph: 'IV', to: '/download' },
+      { name: 'Script Polish', description: 'Refine transcripts', glyph: 'SP', to: '/transcribe' },
+      { name: 'Voice Studio', description: 'Generate AI voiceovers', glyph: 'VS', to: '/tts' },
     ]
   },
   {
     title: 'Automate',
     items: [
-      { name: 'Workflows', description: 'Visual automation builder', icon: '⚡', to: '/workflows' },
-      { name: 'Workspace', description: 'Saved drafts & exports', icon: '📦', to: '/workspace' },
+      { name: 'Workflows', description: 'Visual automation builder', glyph: 'WF', to: '/workflows' },
+      { name: 'Workspace', description: 'Saved drafts & exports', glyph: 'WS', to: '/workspace' },
     ]
   },
   {
     title: 'Account',
     items: [
-      { name: 'Knowledge', description: 'AI context & prompts', icon: '📚', to: '/knowledge' },
-      { name: 'Settings', description: 'Profile & preferences', icon: '⚙️', to: '/settings' },
-      { name: 'Upgrade', description: 'Pricing & billing', icon: '🚀', to: '/pricing', highlight: true },
+      { name: 'Knowledge', description: 'AI context & prompts', glyph: 'KN', to: '/knowledge' },
+      { name: 'Settings', description: 'Profile & preferences', glyph: 'ST', to: '/settings' },
+      { name: 'Upgrade', description: 'Pricing & billing', glyph: 'UP', to: '/pricing', highlight: true },
     ]
   }
 ];

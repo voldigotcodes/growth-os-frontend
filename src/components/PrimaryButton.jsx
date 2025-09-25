@@ -16,48 +16,28 @@ function PrimaryButton({
   const isDark = theme === 'dark';
 
   const sizeClasses = {
-    sm: 'px-4 py-2 text-sm rounded-md',
-    md: 'px-6 py-3 text-base rounded-lg',
-    lg: 'px-8 py-4 text-lg rounded-xl'
+    sm: 'px-4 py-2 text-sm rounded-[14px]',
+    md: 'px-6 py-3 text-base rounded-[18px]',
+    lg: 'px-7 py-3.5 text-lg rounded-[22px]'
   };
 
   const variantClasses = {
-    primary: [
-      'font-semibold transition-all duration-300 focus:outline-none',
-      isDark
-        ? 'bg-system-blue text-white shadow-glass hover:shadow-glass-lg'
-        : 'bg-system-blue text-white shadow-lg hover:shadow-xl',
-      'hover:scale-[1.02] active:scale-[0.98]',
-      'transition-apple-ease focus-visible:outline-2 focus-visible:outline-system-blue focus-visible:outline-offset-2'
-    ].join(' '),
-    secondary: [
-      'font-medium transition-all duration-300 focus:outline-none border material-regular',
-      isDark
-        ? 'border-white/20 text-white/90 hover:bg-white/15'
-        : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50',
-      'transition-apple-ease focus-visible:outline-2 focus-visible:outline-neutral-500 focus-visible:outline-offset-2'
-    ].join(' '),
-    outline: [
-      'font-medium transition-all duration-300 focus:outline-none border-2',
-      isDark
-        ? 'border-system-blue/60 text-system-blue hover:bg-system-blue/10'
-        : 'border-system-blue text-system-blue hover:bg-system-blue/5',
-      'transition-apple-ease focus-visible:outline-2 focus-visible:outline-system-blue focus-visible:outline-offset-2'
-    ].join(' ')
+    primary: isDark
+      ? 'bg-gradient-to-r from-sky-500/60 to-indigo-500/60 text-white shadow-[0_25px_55px_rgba(46,114,255,0.35)]'
+      : 'bg-gradient-to-r from-sky-400 to-indigo-400 text-white shadow-[0_25px_55px_rgba(46,114,255,0.25)]',
+    secondary: 'liquid-button text-white/85',
+    outline: isDark
+      ? 'border border-white/25 bg-transparent text-white/85 hover:bg-white/10'
+      : 'border border-slate-300 bg-transparent text-slate-700 hover:bg-slate-100/60'
   };
 
-  const disabledClasses = [
-    'opacity-50 cursor-not-allowed pointer-events-none'
-  ].join(' ');
-
-  const loadingClasses = [
-    'cursor-wait'
-  ].join(' ');
+  const disabledClasses = 'opacity-50 cursor-not-allowed pointer-events-none';
+  const loadingClasses = 'cursor-wait';
 
   return (
     <button
       className={[
-        'inline-flex items-center justify-center gap-2',
+        'inline-flex items-center justify-center gap-2 transition-transform duration-200 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60',
         sizeClasses[size],
         variantClasses[variant],
         disabled && disabledClasses,
