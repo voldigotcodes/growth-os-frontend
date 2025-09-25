@@ -1,18 +1,38 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import PrimaryButton from '../PrimaryButton.jsx';
 
 const steps = [
-  { title: 'Add a tool', description: 'Drag an automation tile from the palette.' },
-  { title: 'Connect the ports', description: 'Match glowing badges with the same icon & type.' },
-  { title: 'Save & run', description: 'Give it a name, hit run, and watch the glass glow.' },
+  { title: 'Welcome to Workflows', description: 'Create automated content pipelines with visual tools', icon: '⚡' },
+  { title: 'Add a tool', description: 'Drag an automation tile from the palette to get started', icon: '🛠️' },
+  { title: 'Connect the ports', description: 'Match glowing badges with the same icon & type', icon: '🔗' },
+  { title: 'Save & run', description: 'Give it a name, hit run, and watch the glass glow', icon: '🚀' },
 ];
 
-function OnboardingOverlay() {
+function OnboardingOverlay({ onComplete }) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const currentStepData = steps[currentStep];
+  const isLastStep = currentStep === steps.length - 1;
+
+  const handleNext = () => {
+    if (isLastStep) {
+      onComplete?.();
+    } else {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
   return (
-    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-8 text-center">
+    <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-8 text-center bg-black/20 backdrop-blur-sm">
       <div className={[
         "liquid-glass-onboard relative w-full max-w-md rounded-[28px] border p-8",
         isDark
@@ -21,40 +41,67 @@ function OnboardingOverlay() {
       ].join(' ')}>
         <div className="absolute -inset-2 rounded-[32px] bg-gradient-to-r from-rose-400/40 via-sky-400/30 to-emerald-400/40 blur-3xl opacity-60" aria-hidden />
         <div className="relative z-10 space-y-6">
-          <div className={[
-            "inline-flex items-center gap-2 rounded-full border px-4 py-1 text-[11px] uppercase tracking-[0.35em]",
-            isDark
-              ? "border-white/20 bg-white/10 text-white/70"
-              : "border-slate-300/40 bg-slate-100/80 text-slate-600"
-          ].join(' ')}>
-            Workflow Automator
+          <div className="flex items-center justify-between">
+            <div className={[
+              "inline-flex items-center gap-2 rounded-full border px-4 py-1 text-[11px] uppercase tracking-[0.35em]",
+              isDark
+                ? "border-white/20 bg-white/10 text-white/70"
+                : "border-slate-300/40 bg-slate-100/80 text-slate-600"
+            ].join(' ')}>
+              Step {currentStep + 1} of {steps.length}
+            </div>
+            <button
+              onClick={() => onComplete?.()}
+              className={`text-sm ${isDark ? 'text-white/60 hover:text-white/80' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Skip
+            </button>
           </div>
-          <h2 className={`text-2xl font-semibold tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>Build your first glass pipeline</h2>
-          <ol className={`space-y-4 text-sm ${isDark ? 'text-white/80' : 'text-slate-700'}`}>
-            {steps.map((step, index) => (
-              <li key={step.title} className="flex items-start gap-3 text-left">
-                <span className={[
-                  "mt-0.5 flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold",
-                  isDark
-                    ? "border-white/20 bg-white/10 text-white/90"
-                    : "border-slate-300/40 bg-slate-100/80 text-slate-700"
-                ].join(' ')}>
-                  {index + 1}
-                </span>
-                <div>
-                  <p className={`font-semibold ${isDark ? 'text-white/90' : 'text-slate-800'}`}>{step.title}</p>
-                  <p className={isDark ? 'text-white/75' : 'text-slate-600'}>{step.description}</p>
-                </div>
-              </li>
+
+          <div className="flex flex-col items-center gap-4">
+            <span className="text-4xl">{currentStepData.icon}</span>
+            <h2 className={`text-2xl font-semibold tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>
+              {currentStepData.title}
+            </h2>
+            <p className={`text-base ${isDark ? 'text-white/80' : 'text-slate-700'}`}>
+              {currentStepData.description}
+            </p>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 py-4">
+            {steps.map((_, index) => (
+              <div
+                key={index}
+                className={[
+                  "h-2 w-2 rounded-full transition-colors",
+                  index === currentStep
+                    ? isDark ? "bg-white" : "bg-slate-800"
+                    : isDark ? "bg-white/30" : "bg-slate-300"
+                ].join(' ')}
+              />
             ))}
-          </ol>
-          <p className={`text-xs uppercase tracking-[0.35em] ${isDark ? 'text-white/50' : 'text-slate-500'}`}>
-            Tip · Hold shift while dragging to snap nodes
-          </p>
+          </div>
+
+          <div className="flex gap-3">
+            {currentStep > 0 && (
+              <PrimaryButton
+                variant="secondary"
+                onClick={handlePrevious}
+                className="flex-1"
+              >
+                Previous
+              </PrimaryButton>
+            )}
+            <PrimaryButton
+              onClick={handleNext}
+              className="flex-1"
+              icon={isLastStep ? '🚀' : '→'}
+              iconPosition="right"
+            >
+              {isLastStep ? 'Get Started' : 'Next'}
+            </PrimaryButton>
+          </div>
         </div>
-      </div>
-      <div className="h-18 w-18 pointer-events-none">
-        <div className="liquid-orb" aria-hidden />
       </div>
     </div>
   );

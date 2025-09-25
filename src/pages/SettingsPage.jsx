@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import GlassCard from '../components/GlassCard.jsx';
+import PrimaryButton from '../components/PrimaryButton.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useToast } from '../components/ToastContext.jsx';
 import { usePreferences } from '../context/PreferencesContext.jsx';
@@ -45,9 +46,9 @@ export default function SettingsPage() {
             Customize your Growth OS experience and manage your creative workspace preferences.
           </p>
         </div>
-        <button type="button" className={accentPurple} onClick={handleSaveSettings}>
+        <PrimaryButton icon="💾" onClick={handleSaveSettings}>
           Save Changes
-        </button>
+        </PrimaryButton>
       </header>
 
       <div className="grid gap-8 lg:grid-cols-2">
@@ -194,7 +195,7 @@ export default function SettingsPage() {
           </GlassCard>
         </div>
 
-        {/* Preferences */}
+        {/* Preferences Column */}
         <div className="space-y-6">
           <GlassCard title="Notifications" subtitle="Choose what updates you want to receive.">
             <div className="space-y-4">

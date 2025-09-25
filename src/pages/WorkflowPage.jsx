@@ -20,6 +20,9 @@ import OnboardingOverlay from '../components/workflow/OnboardingOverlay.jsx';
 import QuickStartTemplates from '../components/workflow/QuickStartTemplates.jsx';
 import WorkflowHistory from '../components/workflow/WorkflowHistory.jsx';
 import RunSummaryDrawer from '../components/workflow/RunSummaryDrawer.jsx';
+import useSmartDefaults from '../hooks/useSmartDefaults.js';
+import { useFeatureFlags } from '../context/FeatureFlagContext.jsx';
+import { useStatus, useStatusContext } from '../context/StatusContext.jsx';
 import {
   createWorkflow,
   fetchWorkflowTools,
@@ -144,13 +147,18 @@ function formatDurationLabel(startIso, endIso) {
 function WorkflowPageInner() {
   const { addToast } = useToast();
   const reactFlow = useReactFlow();
+  const { flags } = useFeatureFlags();
+  const { applyDefaults, remember } = useSmartDefaults('workflow');
+  const [, setSaveStatus] = useStatus('workflow:save');
+  const [, setRunStatus] = useStatus('workflow:run');
 
   const [tools, setTools] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [workflows, setWorkflows] = useState([]);
   const [selectedWorkflow, setSelectedWorkflow] = useState(null);
-  const [workflowName, setWorkflowName] = useState('New Automation');
-  const [notes, setNotes] = useState('');
+  const defaultForm = applyDefaults({ name: 'New Automation', notes: '' });
+  const [workflowName, setWorkflowName] = useState(defaultForm.name);
+  const [notes, setNotes] = useState(defaultForm.notes);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -281,12 +289,13 @@ function WorkflowPageInner() {
     setNodes([]);
     setEdges([]);
     setSelectedWorkflow(null);
-    setWorkflowName('New Automation');
-    setNotes('');
+    const defaults = applyDefaults({ name: 'New Automation', notes: '' });
+    setWorkflowName(defaults.name);
+    setNotes(defaults.notes);
     animationActiveRef.current = false;
     setInvalidHandles({});
     setSelectedNodeId(null);
-  }, [setEdges, setNodes]);
+  }, [applyDefaults, setEdges, setNodes]);
 
   const handleDropTool = useCallback(
     ({ tool, position }) => {
@@ -398,6 +407,7 @@ function WorkflowPageInner() {
     }
     const payload = extractWorkflowPayload();
     setIsSaving(true);
+    setSaveStatus('loading');
     try {
       let response;
       if (selectedWorkflow?.id) {
@@ -410,12 +420,15 @@ function WorkflowPageInner() {
         addToast('Workflow saved.');
       }
       setSelectedWorkflow(response);
+      remember({ name: workflowName, notes });
+      setSaveStatus('success');
     } catch (error) {
       addToast(error.message || 'Unable to save workflow.', 'error');
+      setSaveStatus('error');
     } finally {
       setIsSaving(false);
     }
-  }, [addToast, extractWorkflowPayload, nodes.length, selectedWorkflow, setWorkflows]);
+  }, [addToast, extractWorkflowPayload, nodes.length, notes, remember, selectedWorkflow, setSaveStatus, setWorkflows, workflowName]);
 
   const runAnimation = useCallback(
     async (trace) => {
@@ -473,6 +486,7 @@ function WorkflowPageInner() {
     const payload = extractWorkflowPayload();
     const startedAt = new Date();
     setIsRunning(true);
+    setRunStatus('loading');
     try {
       const response = await runWorkflow({ id: selectedWorkflow.id, payload });
       addToast('Workflow running — watch the glow.');
@@ -506,6 +520,7 @@ function WorkflowPageInner() {
         },
         ...prev,
       ].slice(0, 16));
+      setRunStatus('success');
     } catch (error) {
       addToast(error.message || 'Unable to run workflow.', 'error');
       const runId = `${selectedWorkflow?.id ?? 'draft'}-${startedAt.getTime()}`;
@@ -523,10 +538,11 @@ function WorkflowPageInner() {
         },
         ...prev,
       ].slice(0, 16));
+      setRunStatus('error');
     } finally {
       setIsRunning(false);
     }
-  }, [addToast, extractWorkflowPayload, nodes.length, runAnimation, selectedWorkflow, workflowName]);
+  }, [addToast, extractWorkflowPayload, nodes.length, runAnimation, selectedWorkflow, setRunStatus, workflowName]);
 
   const loadWorkflowDefinition = useCallback((wf) => {
     if (!wf) return;
@@ -618,6 +634,7 @@ function WorkflowPageInner() {
 
   const paletteTools = useMemo(() => tools ?? [], [tools]);
   const quickTemplates = useMemo(() => templates.slice(0, 6), [templates]);
+  const showQuickStartTemplates = flags.progressiveDisclosure !== false;
   const estimatedCostLabel = useMemo(() => {
     const remaining = quota?.quota?.credits_remaining?.workflow_runs;
     if (remaining !== undefined && remaining !== null) {
@@ -642,6 +659,9 @@ function WorkflowPageInner() {
     () => nodes.find((node) => node.id === selectedNodeId) ?? null,
     [nodes, selectedNodeId]
   );
+  const { status: statusMap } = useStatusContext();
+  const workflowSaveState = statusMap['workflow:save'];
+  const workflowRunState = statusMap['workflow:run'];
 
   const handleHistoryEntrySelect = useCallback((entry) => {
     if (!entry?.summary) {
@@ -728,6 +748,32 @@ function WorkflowPageInner() {
       setPendingRunWorkflowId(null);
     }
   }, [handleRunWorkflow, isRunning, pendingRunWorkflowId, selectedWorkflowId]);
+
+  useEffect(() => {
+    const listener = () => {
+      if (!isRunning) {
+        handleRunWorkflow();
+      }
+    };
+    window.addEventListener('workflow:run', listener);
+    return () => window.removeEventListener('workflow:run', listener);
+  }, [handleRunWorkflow, isRunning]);
+
+  useEffect(() => {
+    const shortcutListener = (event) => {
+      const isCmd = event.metaKey || event.ctrlKey;
+      if (isCmd && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        handleSaveWorkflow();
+      }
+      if (isCmd && event.key === 'Enter') {
+        event.preventDefault();
+        handleRunWorkflow();
+      }
+    };
+    window.addEventListener('keydown', shortcutListener);
+    return () => window.removeEventListener('keydown', shortcutListener);
+  }, [handleRunWorkflow, handleSaveWorkflow]);
 
   const handleSelectionChange = useCallback((selection) => {
     const firstNode = selection?.nodes?.[0];
@@ -830,7 +876,19 @@ function WorkflowPageInner() {
           canRun={canRun}
           estimatedCost={estimatedCostLabel}
           hasSelection={hasSelection}
+          showDelete={!flags.consolidatedActions}
+          showClear={!flags.consolidatedActions}
         />
+        {(workflowSaveState || workflowRunState) && (
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs uppercase tracking-[0.3em] text-white/60">
+            {workflowSaveState === 'loading' && <span>Saving workflow… </span>}
+            {workflowSaveState === 'success' && <span className="text-emerald-200">Saved</span>}
+            {workflowSaveState === 'error' && <span className="text-rose-200">Save failed</span>}
+            {workflowRunState === 'loading' && <span className="ml-4">Running workflow…</span>}
+            {workflowRunState === 'success' && <span className="ml-4 text-emerald-200">Run complete</span>}
+            {workflowRunState === 'error' && <span className="ml-4 text-rose-200">Run failed</span>}
+          </div>
+        )}
 
         <section className="grid gap-8 xl:grid-cols-[340px,minmax(0,1fr)]">
           <div className="order-2 flex flex-col gap-6 xl:order-1">
@@ -912,11 +970,13 @@ function WorkflowPageInner() {
               </div>
             </GlassCard>
 
-            <QuickStartTemplates
-              templates={quickTemplates}
-              onUse={handleUseTemplate}
-              loadingId={templateLoadingId}
-            />
+            {showQuickStartTemplates ? (
+              <QuickStartTemplates
+                templates={quickTemplates}
+                onUse={handleUseTemplate}
+                loadingId={templateLoadingId}
+              />
+            ) : null}
           </div>
         </section>
       </div>

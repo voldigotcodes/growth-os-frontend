@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import ContextMenu from '../ContextMenu.jsx';
 import Port from './Port.jsx';
 
 const getStatusStyles = (isDark) => ({
@@ -38,36 +39,58 @@ function WorkflowNode({ data, selected }) {
   const statusStyles = getStatusStyles(isDark);
   const statusStyle = statusStyles[status] ?? statusStyles.idle;
 
+  const contextMenuItems = [
+    { icon: '⚙️', label: 'Configure', action: () => console.log('Configure node') },
+    { icon: '📊', label: 'View Logs', action: () => console.log('View logs') },
+    { icon: '🔄', label: 'Reset', action: () => console.log('Reset node') },
+    { type: 'separator' },
+    { icon: '🗑️', label: 'Delete', action: () => console.log('Delete node'), destructive: true }
+  ];
+
   return (
     <div
-      className={`glass-panel relative flex w-[240px] flex-col gap-4 rounded-3xl px-5 py-4 text-xs transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-sky-300/70 ${
-        selected ? 'scale-[1.03]' : 'scale-100'
+      className={`glass-panel relative flex w-[240px] flex-col gap-4 rounded-lg px-4 py-4 text-xs transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-sky-300/50 ${
+        selected ? 'scale-[1.02] shadow-lg' : 'scale-100'
       }`}
       tabIndex={0}
       aria-label={`${label || toolType} node`}
     >
       <header className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 text-lg shadow-[0_8px_20px_rgba(15,23,42,0.35)]">
+          {/* Simplified icon badge - single size, reduced shadow, consistent background */}
+          <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-base ${
+            isDark ? 'bg-white/12' : 'bg-slate-200/60'
+          } shadow-sm`}>
             {icon}
           </span>
           <div className="space-y-1">
-            <p className="text-sm font-semibold theme-text-primary">{label || 'Workflow Tool'}</p>
-            <p className={`text-[11px] ${isDark ? 'text-white/60' : 'text-slate-600'}`}>{description || toolType}</p>
+            <p className="text-sm font-medium theme-text-primary">{label || 'Workflow Tool'}</p>
+            <p className={`text-xs leading-snug ${isDark ? 'text-white/65' : 'text-slate-600'}`}>{description || toolType}</p>
           </div>
         </div>
-        <span
-          className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.25em] ${statusStyle}`}
-        >
-          {status}
-        </span>
+        {/* Simplified status chip with improved contrast */}
+        <div className="flex items-center gap-2">
+          <span className={`rounded-lg border px-2.5 py-1 text-xs font-medium uppercase tracking-wide ${statusStyle}`}>
+            {status}
+          </span>
+          <ContextMenu
+            items={contextMenuItems}
+            placement="bottom-left"
+            trigger={
+              <button className={`p-1 rounded-md transition-colors ${isDark ? 'hover:bg-white/10' : 'hover:bg-slate-200/60'}`}>
+                <span className="text-sm">⋯</span>
+              </button>
+            }
+          />
+        </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         {inputPorts.length ? (
           <div className="space-y-2">
-            <p className={`text-[10px] font-semibold uppercase tracking-[0.3em] ${isDark ? 'text-white/50' : 'text-slate-500'}`}>Inputs</p>
-            <div className="space-y-2">
+            {/* Simplified port section header */}
+            <p className={`text-xs font-medium uppercase tracking-wide ${isDark ? 'text-white/60' : 'text-slate-500'}`}>Inputs</p>
+            <div className="space-y-1.5">
               {inputPorts.map((port) => (
                 <Port
                   key={port.id}
@@ -82,8 +105,9 @@ function WorkflowNode({ data, selected }) {
         ) : null}
         {outputPorts.length ? (
           <div className="space-y-2">
-            <p className={`text-[10px] font-semibold uppercase tracking-[0.3em] text-right ${isDark ? 'text-white/50' : 'text-slate-500'}`}>Outputs</p>
-            <div className="space-y-2">
+            {/* Simplified port section header */}
+            <p className={`text-xs font-medium uppercase tracking-wide text-right ${isDark ? 'text-white/60' : 'text-slate-500'}`}>Outputs</p>
+            <div className="space-y-1.5">
               {outputPorts.map((port) => (
                 <Port
                   key={port.id}

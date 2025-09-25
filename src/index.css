@@ -81,10 +81,70 @@ body.theme-light::after {
 
 @layer components {
   .glass-panel {
-    @apply rounded-3xl border border-white/20 bg-white/10 backdrop-blur-xl shadow-lg transition-all duration-300 ease-in-out transform;
+    @apply rounded-xl border border-white/20 backdrop-blur-xl shadow-lg transition-all duration-300 ease-in-out transform;
     background: var(--glass-panel);
     border-color: var(--glass-border);
     box-shadow: var(--shadow-depth);
+    /* Apple-style material hierarchy */
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* Apple system materials */
+  .material-regular {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .material-thick {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+  }
+
+  .material-thin {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px) saturate(150%);
+    -webkit-backdrop-filter: blur(10px) saturate(150%);
+  }
+
+  .material-ultra-thin {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(5px) saturate(120%);
+    -webkit-backdrop-filter: blur(5px) saturate(120%);
+  }
+
+  /* Apple-style keyframes */
+  @keyframes spring-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.9) translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-up {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   body.theme-light .glass-panel {
@@ -120,12 +180,19 @@ body.theme-light::after {
   }
 
   .liquid-interactive {
-    @apply rounded-2xl border border-white/20 bg-white/10 px-4 py-2 shadow-lg backdrop-blur-xl transition-all duration-300 ease-in-out transform;
+    @apply rounded-lg border border-white/20 bg-white/10 px-4 py-2 shadow-lg backdrop-blur-xl transition-all duration-300 transform;
+    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
   }
 
   .liquid-interactive:hover,
   .liquid-interactive:focus-visible {
-    @apply bg-white/20 backdrop-blur-2xl ring-2 ring-pink-400/40 scale-105 shadow-2xl -translate-y-1;
+    @apply bg-white/25 ring-2 ring-system-blue/40 scale-105 shadow-2xl;
+    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    transform: scale(1.05) translateY(-2px);
   }
 
   body.theme-light .liquid-interactive {
@@ -147,12 +214,26 @@ body.theme-light::after {
   }
 
   .liquid-button {
-    @apply inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-5 py-2 text-sm font-medium shadow-lg backdrop-blur-xl transition-all duration-300 ease-in-out transform;
+    @apply inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/10 px-5 py-2 text-sm font-medium shadow-lg backdrop-blur-xl transition-all duration-300 transform;
+    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    /* Apple-style focus ring */
+    outline: 2px solid transparent;
   }
 
   .liquid-button:hover,
   .liquid-button:focus-visible {
-    @apply bg-white/20 backdrop-blur-2xl ring-2 ring-pink-400/40 scale-105 shadow-2xl -translate-y-1;
+    @apply bg-white/25 ring-2 ring-system-blue/40 scale-105 shadow-2xl;
+    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    transform: scale(1.05) translateY(-2px);
+  }
+
+  .liquid-button:focus-visible {
+    outline: 2px solid #007AFF;
+    outline-offset: 2px;
   }
 
   body.theme-light .liquid-button {

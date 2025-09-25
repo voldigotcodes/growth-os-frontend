@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
 import GlassCard from '../GlassCard.jsx';
+import ProgressiveSection from '../ProgressiveSection.jsx';
 
 function WorkflowNodeConfigPanel({ node, onChange }) {
   const schema = node?.data?.configSchema;
@@ -11,6 +12,19 @@ function WorkflowNodeConfigPanel({ node, onChange }) {
   }, [schema]);
 
   const propertyEntries = useMemo(() => Object.entries(properties), [properties]);
+  const requiredKeys = schema?.required ?? [];
+  const [requiredEntries, advancedEntries] = useMemo(() => {
+    const required = [];
+    const advanced = [];
+    propertyEntries.forEach((entry) => {
+      if (requiredKeys.includes(entry[0])) {
+        required.push(entry);
+      } else {
+        advanced.push(entry);
+      }
+    });
+    return [required, advanced];
+  }, [propertyEntries, requiredKeys]);
 
   if (!node) {
     return (
@@ -126,7 +140,14 @@ function WorkflowNodeConfigPanel({ node, onChange }) {
       className="glass-static"
     >
       <div className="space-y-4 text-sm">
-        {propertyEntries.map(([key, definition]) => renderField(key, definition))}
+        {requiredEntries.map(([key, definition]) => renderField(key, definition))}
+        {advancedEntries.length ? (
+          <ProgressiveSection title="Advanced Settings">
+            {advancedEntries.map(([key, definition]) => (
+              <div key={key}>{renderField(key, definition)}</div>
+            ))}
+          </ProgressiveSection>
+        ) : null}
       </div>
     </GlassCard>
   );

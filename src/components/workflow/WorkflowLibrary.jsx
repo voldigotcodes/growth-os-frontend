@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import EmptyState from '../EmptyState.jsx';
 
 function WorkflowLibrary({ workflows, activeId, onSelect, onDelete, onDeleteAll }) {
   return (
@@ -19,7 +20,10 @@ function WorkflowLibrary({ workflows, activeId, onSelect, onDelete, onDeleteAll 
         ) : null}
       </header>
       {(!workflows || workflows.length === 0) && (
-        <p className="text-sm theme-text-muted">Save your first workflow to build the library.</p>
+        <EmptyState
+          title="No automations yet"
+          description="Save a workflow to keep quick access to your favourite automations."
+        />
       )}
       {workflows?.length ? (
         <div className="max-h-[320px] space-y-3 overflow-y-auto pr-1">
@@ -39,18 +43,17 @@ function WorkflowLibrary({ workflows, activeId, onSelect, onDelete, onDeleteAll 
                     activeId === workflow.id ? 'bg-transparent' : ''
                   }`}
                 >
-                  <div>
+                  <div className="space-y-1">
                     <p className="text-sm font-semibold theme-text-primary">{workflow.name}</p>
-                    <p className="text-[10px] uppercase tracking-[0.3em] theme-text-muted">
-                      Updated {timestamp ? new Date(timestamp).toLocaleString() : '—'}
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/60">
+                      {timestamp ? new Date(timestamp).toLocaleString() : 'Draft'}
                     </p>
                   </div>
-                  <span className="text-[10px] uppercase tracking-[0.3em] theme-text-muted">Load</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => onDelete?.(workflow.id)}
-                  className="absolute -right-2 -top-2 hidden h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-slate-900/70 text-sm text-white/80 shadow-lg transition group-hover:flex hover:bg-rose-500/80"
+                  className="absolute -right-2 -top-2 hidden h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-slate-900/70 text-base text-white/80 shadow-lg transition group-hover:flex hover:bg-rose-500/80"
                   aria-label={`Delete ${workflow.name}`}
                 >
                   ×

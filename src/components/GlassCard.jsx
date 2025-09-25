@@ -20,7 +20,7 @@ export default function GlassCard({
   const isDark = theme === 'dark';
 
   const containerClass = [
-    'relative rounded-3xl glass-panel p-8 transition-all duration-300',
+    'relative rounded-xl glass-panel p-4 sm:p-6 lg:p-8 transition-all duration-300',
     allowOverflow ? 'overflow-visible' : 'overflow-hidden',
     interactive ? '' : 'glass-static',
     liquid ? 'liquid' : '',
@@ -34,10 +34,16 @@ export default function GlassCard({
   return (
     <section className={containerClass}>
       {(title || actions) && (
-        <header className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            {title && <h2 className="text-xl font-semibold theme-text-primary">{title}</h2>}
-            {subtitle && <p className="mt-1 text-sm theme-text-muted">{subtitle}</p>}
+        <header className="mb-4 sm:mb-6 flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            {title && <h2 className="text-lg font-semibold leading-6 theme-text-primary">{title}</h2>}
+            {subtitle && (
+              <p
+                className={`text-xs leading-5 line-clamp-1 ${isDark ? 'text-white/60' : 'text-slate-500'}`}
+              >
+                {subtitle}
+              </p>
+            )}
           </div>
           {actions && <div className="flex items-center gap-3">{actions}</div>}
         </header>

@@ -17,35 +17,54 @@ function ToolCard({ tool, onAdd, orientation }) {
       draggable
       onDragStart={handleDrag}
       onClick={() => onAdd?.(tool)}
-      className={`liquid-interactive flex items-start justify-between gap-4 rounded-2xl px-4 py-3 text-left text-xs backdrop-blur ${
-        orientation === 'horizontal' ? 'min-w-[220px]' : ''
+      className={`group flex items-start justify-between gap-4 rounded-xl border px-4 py-3 text-left transition-all duration-300 ease-out hover:scale-[1.01] focus:outline-none focus:ring-2 ${
+        orientation === 'horizontal' ? 'min-w-[200px] flex-shrink-0' : ''
+      } ${
+        isDark
+          ? 'border-white/10 bg-white/5 backdrop-blur-md hover:bg-white/8 hover:border-white/15 focus:ring-white/20'
+          : 'border-slate-200/50 bg-white/70 backdrop-blur-md hover:bg-white/80 hover:border-slate-300/60 focus:ring-sky-300/50'
       }`}
       aria-label={`Add ${tool.label}`}
     >
       <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/15 text-base shadow-[0_6px_18px_rgba(15,23,42,0.35)]">
+        {/* Simplified tool icon with consistent styling */}
+        <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-base ${
+          isDark ? 'bg-white/10' : 'bg-slate-200/60'
+        } shadow-sm`}>
           {tool.icon ?? '✨'}
         </span>
-        <div className="space-y-1">
-          <p className="text-sm font-semibold theme-text-primary">{tool.label}</p>
-          <p className={`text-[11px] line-clamp-2 ${isDark ? 'text-white/65' : 'text-slate-600'}`}>{tool.description}</p>
-          <div className={`flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.25em] ${isDark ? 'text-white/60' : 'text-slate-500'}`}>
+        <div className="space-y-1.5 min-w-0 flex-1">
+          {/* Standardized title typography */}
+          <p className="text-sm font-medium theme-text-primary truncate">{tool.label}</p>
+          {/* Standardized description with better line height */}
+          <p className={`text-xs leading-relaxed line-clamp-2 ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
+            {tool.description}
+          </p>
+          {/* Simplified port badges with standard sizing */}
+          <div className={`flex flex-wrap gap-1.5 text-xs ${isDark ? 'text-white/60' : 'text-slate-500'}`}>
             {(tool.ports?.inputs ?? []).length ? (
-              <span className={`rounded-full border px-2 py-[2px] ${isDark ? 'border-white/20' : 'border-slate-300/40'}`}>
-                In {tool.ports.inputs.map((port) => port.type).join(', ')}
+              <span className={`rounded-md border px-2 py-0.5 text-xs ${isDark ? 'border-white/15 bg-white/5' : 'border-slate-200/60 bg-slate-100/60'}`}>
+                In: {tool.ports.inputs.map((port) => port.type).join(', ')}
               </span>
             ) : (
-              <span className={`rounded-full border px-2 py-[2px] ${isDark ? 'border-white/20' : 'border-slate-300/40'}`}>Source</span>
+              <span className={`rounded-md border px-2 py-0.5 text-xs ${isDark ? 'border-white/15 bg-white/5' : 'border-slate-200/60 bg-slate-100/60'}`}>
+                Source
+              </span>
             )}
             {(tool.ports?.outputs ?? []).length ? (
-              <span className={`rounded-full border px-2 py-[2px] ${isDark ? 'border-white/20' : 'border-slate-300/40'}`}>
-                Out {tool.ports.outputs.map((port) => port.type).join(', ')}
+              <span className={`rounded-md border px-2 py-0.5 text-xs ${isDark ? 'border-white/15 bg-white/5' : 'border-slate-200/60 bg-slate-100/60'}`}>
+                Out: {tool.ports.outputs.map((port) => port.type).join(', ')}
               </span>
             ) : null}
           </div>
         </div>
       </div>
-      <span className={`text-[10px] uppercase tracking-[0.3em] ${isDark ? 'text-white/50' : 'text-slate-500'}`}>Add</span>
+      {/* Simplified add indicator */}
+      <span className={`text-xs uppercase tracking-wide transition-colors duration-300 ${
+        isDark ? 'text-white/50 group-hover:text-white/70' : 'text-slate-500 group-hover:text-slate-700'
+      }`}>
+        Add
+      </span>
     </button>
   );
 }
@@ -56,7 +75,7 @@ function WorkflowPalette({ tools, onAdd, orientation = 'grid' }) {
       <div
         className={
           orientation === 'horizontal'
-            ? 'rounded-3xl border border-white/10 bg-white/5 px-4 py-6 text-sm theme-text-muted backdrop-blur'
+            ? 'rounded-xl border border-white/10 bg-white/5 px-4 py-6 text-sm theme-text-muted backdrop-blur'
             : 'glass-panel p-6 text-sm theme-text-muted'
         }
       >
@@ -66,15 +85,23 @@ function WorkflowPalette({ tools, onAdd, orientation = 'grid' }) {
   }
 
   if (orientation === 'horizontal') {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
+
     return (
-      <div className="rounded-3xl border border-white/12 bg-white/8 px-4 py-5 shadow-[0_25px_55px_rgba(15,23,42,0.28)] backdrop-blur">
-        <header className="mb-4 flex items-center justify-between gap-3">
+      <div className={`rounded-lg border px-4 py-4 shadow-lg backdrop-blur-md ${
+        isDark
+          ? 'border-white/10 bg-white/5'
+          : 'border-slate-200/50 bg-white/80'
+      }`}>
+        <header className="mb-3 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold theme-text-primary">Tool Palette</h2>
-            <p className="text-xs theme-text-muted">Drag or tap to drop tools onto the canvas.</p>
+            <h2 className="text-sm font-medium theme-text-primary">Tool Palette</h2>
+            <p className="text-xs theme-text-muted">Drag or tap to add tools to canvas</p>
           </div>
         </header>
-        <div className="flex gap-3 overflow-x-auto pb-1">
+        {/* Improved horizontal scroll with better mobile handling */}
+        <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20">
           {tools.map((tool) => (
             <ToolCard key={tool.type} tool={tool} onAdd={onAdd} orientation="horizontal" />
           ))}

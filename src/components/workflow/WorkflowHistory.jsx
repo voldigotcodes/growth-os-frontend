@@ -1,15 +1,11 @@
 import { memo } from 'react';
+import EmptyState from '../EmptyState.jsx';
 
-function statusIcon(status) {
-  switch (status) {
-    case 'running':
-      return '💡';
-    case 'failed':
-      return '⚠️';
-    default:
-      return '✅';
-  }
-}
+const STATUS_CLASSES = {
+  running: 'bg-sky-400/25 text-sky-100',
+  failed: 'bg-rose-400/25 text-rose-100',
+  completed: 'bg-emerald-400/25 text-emerald-100',
+};
 
 function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onViewLogs, onDelete, onDeleteAll }) {
   const formatCredits = (value) => {
@@ -46,7 +42,10 @@ function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onVie
         ) : null}
       </header>
       {history.length === 0 ? (
-        <p className="text-sm theme-text-muted">Run a workflow to see execution history here.</p>
+        <EmptyState
+          title="No runs yet"
+          description="Execute a workflow to populate your latest runs and keep track of results."
+        />
       ) : (
         <div className="space-y-3">
           {history.map((entry) => (
@@ -64,11 +63,17 @@ function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onVie
                 className="liquid-interactive flex w-full flex-col gap-3 rounded-2xl px-4 py-3 text-left text-sm hover:ring-sky-200/60"
               >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl" aria-hidden>{statusIcon(entry.status)}</span>
-                  <div>
+                <div className="flex items-start gap-3">
+                  <span
+                    className={`mt-0.5 inline-flex h-6 min-w-[72px] items-center justify-center rounded-full px-2 text-[10px] font-semibold uppercase tracking-[0.3em] ${
+                      STATUS_CLASSES[entry.status] ?? STATUS_CLASSES.completed
+                    }`}
+                  >
+                    {entry.status}
+                  </span>
+                  <div className="space-y-1">
                     <p className="font-semibold theme-text-primary">{entry.workflowName}</p>
-                    <p className="text-[11px] uppercase tracking-[0.3em] theme-text-muted">
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">
                       {new Date(entry.startedAt).toLocaleString()} · {entry.durationLabel}
                     </p>
                   </div>

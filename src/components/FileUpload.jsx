@@ -63,7 +63,7 @@ export default function FileUpload({ label, hint, accept = '*', disabled = false
       {label && <p className="text-sm font-medium theme-text-primary">{label}</p>}
       <div
         className={[
-          'group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border border-dashed px-6 py-16 text-center transition-all duration-300',
+          'group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-16 text-center transition-all duration-300',
           'bg-white/5 text-sm backdrop-blur-xl',
           borderState,
           disabled ? 'cursor-not-allowed opacity-50' : 'hover:border-emerald-300/60 hover:bg-emerald-500/10',
@@ -73,7 +73,7 @@ export default function FileUpload({ label, hint, accept = '*', disabled = false
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
       >
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-3xl">
+        <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-white/10 bg-white/10 text-3xl">
           ⬆️
         </div>
         <div className="space-y-1">
