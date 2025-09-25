@@ -25,12 +25,6 @@ export default function App() {
     body.classList.add(`theme-${theme}`);
   }, [theme]);
 
-  // Apply accent color to body
-  useEffect(() => {
-    const body = document.body;
-    body.classList.remove('accent-purple', 'accent-blue', 'accent-emerald', 'accent-pink');
-    body.classList.add(`accent-${preferences.interface.accentColor}`);
-  }, [preferences.interface.accentColor]);
 
   const contextValue = useMemo(
     () => ({

@@ -63,7 +63,7 @@ function renderContent(tab, isDark) {
             <div
               className={[
                 'mt-2 flex items-center gap-3 text-xs transition-colors duration-300',
-                isDark ? 'text-white/40' : 'text-slate-400',
+                isDark ? 'text-white/40' : 'text-slate-500',
               ].join(' ')}
             >
               <div

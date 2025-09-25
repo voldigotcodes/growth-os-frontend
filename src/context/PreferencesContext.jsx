@@ -5,7 +5,6 @@ const PreferencesContext = createContext({
     interface: {
       compactMode: false,
       showDescriptions: true,
-      accentColor: 'purple',
     },
     notifications: {
       workflowComplete: true,
@@ -27,7 +26,6 @@ const defaultPreferences = {
   interface: {
     compactMode: false,
     showDescriptions: true,
-    accentColor: 'purple',
   },
   notifications: {
     workflowComplete: true,
@@ -98,7 +96,6 @@ export function PreferencesProvider({ children }) {
 
     // Remove existing preference classes
     body.classList.remove('compact-mode', 'hide-descriptions');
-    body.classList.remove('accent-purple', 'accent-blue', 'accent-emerald', 'accent-pink');
 
     // Apply current preferences
     if (preferences.interface.compactMode) {
@@ -108,9 +105,7 @@ export function PreferencesProvider({ children }) {
     if (!preferences.interface.showDescriptions) {
       body.classList.add('hide-descriptions');
     }
-
-    body.classList.add(`accent-${preferences.interface.accentColor}`);
-  }, [preferences.interface.compactMode, preferences.interface.showDescriptions, preferences.interface.accentColor]);
+  }, [preferences.interface.compactMode, preferences.interface.showDescriptions]);
 
   const contextValue = useMemo(
     () => ({

@@ -50,8 +50,8 @@ body.theme-light {
   color: rgba(15, 23, 42, 0.92);
   background: linear-gradient(135deg, rgba(240, 249, 255, 0.78), rgba(229, 231, 235, 0.7));
   --text-primary: rgba(15, 23, 42, 0.95);
-  --text-secondary: rgba(30, 41, 59, 0.75);
-  --text-muted: rgba(71, 85, 105, 0.6);
+  --text-secondary: rgba(30, 41, 59, 0.85);
+  --text-muted: rgba(71, 85, 105, 0.75);
   --glass-panel: rgba(255, 255, 255, 0.58);
   --glass-panel-hover: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(203, 213, 225, 0.45);
@@ -356,205 +356,38 @@ body.hide-descriptions .liquid-interactive div span:last-child {
   @apply hidden;
 }
 
-/* ===== COMPREHENSIVE ACCENT COLOR SYSTEM ===== */
+/* ===== SIMPLE INTERFACE PREFERENCES ===== */
 
-/* Purple Accent (Default) */
-body.theme-dark.accent-purple {
-  --accent-primary: rgba(168, 85, 247, 1);
-  --accent-secondary: rgba(147, 51, 234, 1);
-  --accent-ring-hover: rgb(168 85 247 / 0.5);
-  --accent-ring-active: rgb(168 85 247 / 0.6);
-  --accent-glow: 0 0 25px rgba(147, 51, 234, 0.15);
-  --accent-text: rgb(221 214 254);
-  --accent-bg-subtle: rgba(147, 51, 234, 0.08);
-  --accent-bg-muted: rgba(168, 85, 247, 0.12);
-  --glass-panel: rgba(15, 23, 42, 0.55);
-  --glass-panel-hover: rgba(30, 41, 59, 0.65);
-  --glass-border-accent: rgba(168, 85, 247, 0.25);
+/* Compact Mode */
+body.compact-mode .glass-panel {
+  @apply px-4 py-3;
 }
 
-
-body.theme-light.accent-purple {
-  --accent-primary: rgba(147, 51, 234, 1);
-  --accent-secondary: rgba(126, 34, 206, 1);
-  --accent-ring-hover: rgb(147 51 234 / 0.5);
-  --accent-ring-active: rgb(147 51 234 / 0.6);
-  --accent-glow: 0 0 25px rgba(147, 51, 234, 0.2);
-  --accent-text: rgb(88 28 135);
-  --accent-bg-subtle: rgba(147, 51, 234, 0.06);
-  --accent-bg-muted: rgba(147, 51, 234, 0.1);
-  --glass-border-accent: rgba(147, 51, 234, 0.3);
+body.compact-mode aside {
+  @apply gap-6 px-5 py-8;
 }
 
-
-/* Blue Accent */
-body.theme-dark.accent-blue {
-  --accent-primary: rgba(59, 130, 246, 1);
-  --accent-secondary: rgba(37, 99, 235, 1);
-  --accent-ring-hover: rgb(59 130 246 / 0.5);
-  --accent-ring-active: rgb(59 130 246 / 0.6);
-  --accent-glow: 0 0 25px rgba(59, 130, 246, 0.15);
-  --accent-text: rgb(219 234 254);
-  --accent-bg-subtle: rgba(59, 130, 246, 0.08);
-  --accent-bg-muted: rgba(59, 130, 246, 0.12);
-  --glass-panel: rgba(15, 23, 42, 0.55);
-  --glass-panel-hover: rgba(30, 41, 59, 0.65);
-  --glass-border-accent: rgba(59, 130, 246, 0.25);
+body.compact-mode .liquid-interactive {
+  @apply px-3 py-2;
 }
 
-
-body.theme-light.accent-blue {
-  --accent-primary: rgba(37, 99, 235, 1);
-  --accent-secondary: rgba(29, 78, 216, 1);
-  --accent-ring-hover: rgb(37 99 235 / 0.5);
-  --accent-ring-active: rgb(37 99 235 / 0.6);
-  --accent-glow: 0 0 25px rgba(59, 130, 246, 0.2);
-  --accent-text: rgb(30 58 138);
-  --accent-bg-subtle: rgba(59, 130, 246, 0.06);
-  --accent-bg-muted: rgba(59, 130, 246, 0.1);
-  --glass-border-accent: rgba(59, 130, 246, 0.3);
+body.compact-mode .space-y-4 > * + * {
+  margin-top: 0.75rem;
 }
 
-
-/* Emerald Accent */
-body.theme-dark.accent-emerald {
-  --accent-primary: rgba(16, 185, 129, 1);
-  --accent-secondary: rgba(5, 150, 105, 1);
-  --accent-ring-hover: rgb(16 185 129 / 0.5);
-  --accent-ring-active: rgb(16 185 129 / 0.6);
-  --accent-glow: 0 0 25px rgba(16, 185, 129, 0.15);
-  --accent-text: rgb(209 250 229);
-  --accent-bg-subtle: rgba(16, 185, 129, 0.08);
-  --accent-bg-muted: rgba(16, 185, 129, 0.12);
-  --glass-panel: rgba(15, 23, 42, 0.55);
-  --glass-panel-hover: rgba(30, 41, 59, 0.65);
-  --glass-border-accent: rgba(16, 185, 129, 0.25);
+body.compact-mode .space-y-2 > * + * {
+  margin-top: 0.5rem;
 }
 
-
-body.theme-light.accent-emerald {
-  --accent-primary: rgba(5, 150, 105, 1);
-  --accent-secondary: rgba(4, 120, 87, 1);
-  --accent-ring-hover: rgb(5 150 105 / 0.5);
-  --accent-ring-active: rgb(5 150 105 / 0.6);
-  --accent-glow: 0 0 25px rgba(16, 185, 129, 0.2);
-  --accent-text: rgb(6 78 59);
-  --accent-bg-subtle: rgba(16, 185, 129, 0.06);
-  --accent-bg-muted: rgba(16, 185, 129, 0.1);
-  --glass-border-accent: rgba(16, 185, 129, 0.3);
+body.compact-mode nav.space-y-4 > * + * {
+  margin-top: 0.75rem;
 }
 
-
-/* Pink Accent */
-body.theme-dark.accent-pink {
-  --accent-primary: rgba(236, 72, 153, 1);
-  --accent-secondary: rgba(219, 39, 119, 1);
-  --accent-ring-hover: rgb(236 72 153 / 0.5);
-  --accent-ring-active: rgb(236 72 153 / 0.6);
-  --accent-glow: 0 0 25px rgba(236, 72, 153, 0.15);
-  --accent-text: rgb(252 231 243);
-  --accent-bg-subtle: rgba(236, 72, 153, 0.08);
-  --accent-bg-muted: rgba(236, 72, 153, 0.12);
-  --glass-panel: rgba(15, 23, 42, 0.55);
-  --glass-panel-hover: rgba(30, 41, 59, 0.65);
-  --glass-border-accent: rgba(236, 72, 153, 0.25);
+/* Hide Descriptions */
+body.hide-descriptions .liquid-interactive .text-xs {
+  @apply hidden;
 }
 
-
-body.theme-light.accent-pink {
-  --accent-primary: rgba(219, 39, 119, 1);
-  --accent-secondary: rgba(190, 24, 93, 1);
-  --accent-ring-hover: rgb(219 39 119 / 0.5);
-  --accent-ring-active: rgb(219 39 119 / 0.6);
-  --accent-glow: 0 0 25px rgba(236, 72, 153, 0.2);
-  --accent-text: rgb(131 24 67);
-  --accent-bg-subtle: rgba(236, 72, 153, 0.06);
-  --accent-bg-muted: rgba(236, 72, 153, 0.1);
-  --glass-border-accent: rgba(236, 72, 153, 0.3);
-}
-
-
-/* ===== ACCENT-AWARE COMPONENT STYLING ===== */
-
-/* Interactive elements */
-.liquid-interactive:hover,
-.liquid-button:hover {
-  --tw-ring-color: var(--accent-ring-hover);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Glass panels with accent-aware styling */
-.glass-panel {
-  background: var(--glass-panel);
-  border-color: var(--glass-border-accent, var(--glass-border));
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.glass-panel:hover {
-  background: var(--glass-panel-hover);
-  box-shadow: var(--accent-glow), var(--shadow-depth);
-  border-color: var(--glass-border-accent);
-}
-
-/* Active navigation items */
-.active-nav-item {
-  --tw-ring-color: var(--accent-ring-active);
-  color: var(--accent-text);
-  background: var(--accent-bg-subtle);
-}
-
-.active-nav-item:hover {
-  background: var(--accent-bg-muted);
-}
-
-/* Accent-aware buttons and special elements */
-.liquid-button {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.liquid-button:not(.border-purple-400):not(.border-blue-400):not(.border-orange-400):hover {
-  --tw-ring-color: var(--accent-ring-hover);
-  background: var(--accent-bg-subtle);
-  border-color: var(--accent-primary);
-}
-
-/* Status indicators with accent colors */
-.theme-text-primary {
-  transition: color 0.3s ease;
-}
-
-/* Upgrade/highlight button enhanced styling */
-[class*="bg-gradient"] {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-  border-color: var(--accent-ring-active);
-}
-
-[class*="bg-gradient"]:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--accent-glow), 0 10px 25px rgba(0, 0, 0, 0.15);
-}
-
-/* Enhanced glass effects for accent themes */
-body.theme-dark .glass-panel {
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-body.theme-light .glass-panel {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-/* Subtle accent backgrounds for content areas */
-.glass-panel.accent-subtle {
-  background: linear-gradient(135deg,
-    var(--glass-panel),
-    var(--accent-bg-subtle)
-  );
-}
-
-/* Theme-aware status dot */
-.bg-emerald-400 {
-  background: var(--accent-primary) !important;
-  box-shadow: 0 0 12px var(--accent-primary) !important;
+body.hide-descriptions .liquid-interactive div span:last-child {
+  @apply hidden;
 }

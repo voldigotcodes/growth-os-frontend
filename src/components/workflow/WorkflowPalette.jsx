@@ -1,6 +1,9 @@
 import { memo } from 'react';
+import { useTheme } from '../../context/ThemeContext.jsx';
 
 function ToolCard({ tool, onAdd, orientation }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const handleDrag = (event) => {
     event.dataTransfer.setData('application/reactflow', JSON.stringify(tool));
     event.dataTransfer.setData('text/plain', tool.type);
@@ -25,24 +28,24 @@ function ToolCard({ tool, onAdd, orientation }) {
         </span>
         <div className="space-y-1">
           <p className="text-sm font-semibold theme-text-primary">{tool.label}</p>
-          <p className="text-[11px] text-white/65 line-clamp-2">{tool.description}</p>
-          <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.25em] text-white/60">
+          <p className={`text-[11px] line-clamp-2 ${isDark ? 'text-white/65' : 'text-slate-600'}`}>{tool.description}</p>
+          <div className={`flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.25em] ${isDark ? 'text-white/60' : 'text-slate-500'}`}>
             {(tool.ports?.inputs ?? []).length ? (
-              <span className="rounded-full border border-white/20 px-2 py-[2px]">
+              <span className={`rounded-full border px-2 py-[2px] ${isDark ? 'border-white/20' : 'border-slate-300/40'}`}>
                 In {tool.ports.inputs.map((port) => port.type).join(', ')}
               </span>
             ) : (
-              <span className="rounded-full border border-white/20 px-2 py-[2px]">Source</span>
+              <span className={`rounded-full border px-2 py-[2px] ${isDark ? 'border-white/20' : 'border-slate-300/40'}`}>Source</span>
             )}
             {(tool.ports?.outputs ?? []).length ? (
-              <span className="rounded-full border border-white/20 px-2 py-[2px]">
+              <span className={`rounded-full border px-2 py-[2px] ${isDark ? 'border-white/20' : 'border-slate-300/40'}`}>
                 Out {tool.ports.outputs.map((port) => port.type).join(', ')}
               </span>
             ) : null}
           </div>
         </div>
       </div>
-      <span className="text-[10px] uppercase tracking-[0.3em] text-white/50">Add</span>
+      <span className={`text-[10px] uppercase tracking-[0.3em] ${isDark ? 'text-white/50' : 'text-slate-500'}`}>Add</span>
     </button>
   );
 }

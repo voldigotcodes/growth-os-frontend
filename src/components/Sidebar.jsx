@@ -69,7 +69,12 @@ export default function Sidebar() {
             isDark ? 'hover:ring-emerald-300/45' : 'hover:ring-emerald-400/45',
           ].join(' ')}
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-lg">
+          <span className={[
+            "flex h-9 w-9 items-center justify-center rounded-xl border text-lg",
+            isDark
+              ? "border-white/20 bg-white/10"
+              : "border-slate-300/50 bg-slate-100/80"
+          ].join(' ')}>
             {isDark ? '🌤️' : '🌙'}
           </span>
           <div className="flex-1">
@@ -108,11 +113,11 @@ export default function Sidebar() {
                         ? isDark
                           ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-400/30 text-purple-200 hover:ring-purple-300/50'
                           : 'bg-gradient-to-r from-purple-100/80 to-pink-100/80 border-purple-300/40 text-purple-700 hover:ring-purple-300/60'
-                        : isDark ? 'hover:ring-pink-400/50 text-white/75 hover:text-white' : 'hover:ring-pink-400/50 text-slate-600 hover:text-slate-900',
+                        : isDark ? 'hover:ring-pink-400/50 text-white/75 hover:text-white' : 'hover:ring-sky-400/60 text-slate-600 hover:text-slate-900',
                       isActive && !item.highlight
                         ? isDark
                           ? 'active-nav-item ring-2 bg-white/10 text-white'
-                          : 'active-nav-item ring-2 bg-white/90 text-slate-900'
+                          : 'active-nav-item ring-2 ring-sky-400/60 bg-sky-50/90 text-slate-900'
                         : '',
                     ]
                       .filter(Boolean)
@@ -124,7 +129,7 @@ export default function Sidebar() {
                   <div className="flex-1">
                     <span className="block">{item.name}</span>
                     {preferences.interface.showDescriptions && (
-                      <span className={`text-xs ${isDark ? 'text-white/40' : 'text-slate-400'} group-hover:text-current transition-colors`}>
+                      <span className={`text-xs ${isDark ? 'text-white/40' : 'text-slate-500'} group-hover:text-current transition-colors`}>
                         {item.description}
                       </span>
                     )}

@@ -1,6 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
+import { useTheme } from '../context/ThemeContext.jsx';
 
 export default function FileUpload({ label, hint, accept = '*', disabled = false, onFileSelected }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const inputRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -44,10 +47,16 @@ export default function FileUpload({ label, hint, accept = '*', disabled = false
   };
 
   const borderState = disabled
-    ? 'border-white/10 text-white/40'
+    ? isDark
+      ? 'border-white/10 text-white/40'
+      : 'border-slate-200 text-slate-400'
     : isDragging
-    ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-100'
-    : 'border-white/20 text-white/70';
+    ? isDark
+      ? 'border-emerald-400/60 bg-emerald-500/10 text-emerald-100'
+      : 'border-emerald-400 bg-emerald-50 text-emerald-700'
+    : isDark
+    ? 'border-white/20 text-white/70'
+    : 'border-slate-300 text-slate-600';
 
   return (
     <div className="flex flex-col gap-3">

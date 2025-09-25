@@ -35,12 +35,6 @@ export default function SettingsPage() {
     addToast('Settings saved successfully!', 'success');
   };
 
-  const accentColors = [
-    { name: 'Purple', value: 'purple', color: 'bg-purple-500' },
-    { name: 'Blue', value: 'blue', color: 'bg-blue-500' },
-    { name: 'Emerald', value: 'emerald', color: 'bg-emerald-500' },
-    { name: 'Pink', value: 'pink', color: 'bg-pink-500' },
-  ];
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
@@ -166,33 +160,6 @@ export default function SettingsPage() {
                 </button>
               </div>
 
-              <div>
-                <span className="mb-3 block text-xs uppercase tracking-[0.3em] theme-text-muted">
-                  Accent Color
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  {accentColors.map((color) => (
-                    <button
-                      key={color.value}
-                      type="button"
-                      onClick={() => updatePreference('interface', 'accentColor', color.value)}
-                      className={[
-                        'flex items-center gap-3 rounded-xl border p-3 text-left text-sm transition-all',
-                        preferences.interface.accentColor === color.value
-                          ? isDark
-                            ? 'border-white/30 bg-white/10 ring-2 ring-purple-400/50'
-                            : 'border-sky-300 bg-white ring-2 ring-sky-300/50'
-                          : isDark
-                          ? 'border-white/15 bg-white/5 hover:bg-white/10'
-                          : 'border-slate-200/70 bg-white/80 hover:bg-white/90',
-                      ].join(' ')}
-                    >
-                      <div className={`h-4 w-4 rounded-full ${color.color}`} />
-                      <span className={labelText}>{color.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               <div className="space-y-3">
                 <span className="block text-xs uppercase tracking-[0.3em] theme-text-muted">

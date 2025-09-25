@@ -1,14 +1,25 @@
 import { memo, useMemo } from 'react';
+import { useTheme } from '../../context/ThemeContext.jsx';
 import Port from './Port.jsx';
 
-const STATUS_STYLES = {
-  active: 'bg-sky-500/15 text-sky-200 border-sky-300/50',
-  completed: 'bg-emerald-500/15 text-emerald-200 border-emerald-300/50',
-  idle: 'bg-white/10 text-white/60 border-white/20',
-  failed: 'bg-rose-500/15 text-rose-200 border-rose-300/50',
-};
+const getStatusStyles = (isDark) => ({
+  active: isDark
+    ? 'bg-sky-500/15 text-sky-200 border-sky-300/50'
+    : 'bg-sky-100/80 text-sky-700 border-sky-400/60',
+  completed: isDark
+    ? 'bg-emerald-500/15 text-emerald-200 border-emerald-300/50'
+    : 'bg-emerald-100/80 text-emerald-700 border-emerald-400/60',
+  idle: isDark
+    ? 'bg-white/10 text-white/60 border-white/20'
+    : 'bg-slate-100/80 text-slate-600 border-slate-300/60',
+  failed: isDark
+    ? 'bg-rose-500/15 text-rose-200 border-rose-300/50'
+    : 'bg-rose-100/80 text-rose-700 border-rose-400/60',
+});
 
 function WorkflowNode({ data, selected }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const {
     label,
     toolType,
@@ -24,7 +35,8 @@ function WorkflowNode({ data, selected }) {
   const highlightSet = useMemo(() => new Set(highlight), [highlight]);
   const inputPorts = Array.isArray(inputs) ? inputs : [];
   const outputPorts = Array.isArray(outputs) ? outputs : [];
-  const statusStyle = STATUS_STYLES[status] ?? STATUS_STYLES.idle;
+  const statusStyles = getStatusStyles(isDark);
+  const statusStyle = statusStyles[status] ?? statusStyles.idle;
 
   return (
     <div
@@ -41,7 +53,7 @@ function WorkflowNode({ data, selected }) {
           </span>
           <div className="space-y-1">
             <p className="text-sm font-semibold theme-text-primary">{label || 'Workflow Tool'}</p>
-            <p className="text-[11px] text-white/60">{description || toolType}</p>
+            <p className={`text-[11px] ${isDark ? 'text-white/60' : 'text-slate-600'}`}>{description || toolType}</p>
           </div>
         </div>
         <span
@@ -54,7 +66,7 @@ function WorkflowNode({ data, selected }) {
       <div className="grid grid-cols-2 gap-4">
         {inputPorts.length ? (
           <div className="space-y-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-white/50">Inputs</p>
+            <p className={`text-[10px] font-semibold uppercase tracking-[0.3em] ${isDark ? 'text-white/50' : 'text-slate-500'}`}>Inputs</p>
             <div className="space-y-2">
               {inputPorts.map((port) => (
                 <Port
@@ -70,7 +82,7 @@ function WorkflowNode({ data, selected }) {
         ) : null}
         {outputPorts.length ? (
           <div className="space-y-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-white/50 text-right">Outputs</p>
+            <p className={`text-[10px] font-semibold uppercase tracking-[0.3em] text-right ${isDark ? 'text-white/50' : 'text-slate-500'}`}>Outputs</p>
             <div className="space-y-2">
               {outputPorts.map((port) => (
                 <Port
