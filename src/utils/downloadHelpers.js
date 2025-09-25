@@ -157,15 +157,13 @@ export function generateOutputFilename(output) {
 
   // Use label if available
   if (output?.label) {
-    const extension = getFileExtension(output?.url || output?.value?.url || '');
-    return `${output.label}${extension}`;
+  const extension = getFileExtension(output?.file_url || output?.url || output?.value?.url || '');    return `${output.label}${extension}`;
   }
 
   // Generate from node/port info
   const nodeId = output?.node_id ? output.node_id.replace(/^node-/, '') : 'output';
   const portId = output?.port_id || 'result';
-  const extension = getFileExtension(output?.url || output?.value?.url || '');
-
+const extension = getFileExtension(output?.file_url || output?.url || output?.value?.url || '');
   return `${nodeId}-${portId}${extension}`;
 }
 
@@ -173,8 +171,8 @@ export function generateOutputFilename(output) {
  * Validate output has downloadable URL
  */
 export function isDownloadableOutput(output) {
-  const url = output?.url || output?.value?.url;
-  return url && typeof url === 'string' && url.trim().length > 0;
+  const url = output?.file_url || output?.url || output?.value?.url;
+return url && typeof url === 'string' && url.trim().length > 0;
 }
 
 /**
@@ -186,8 +184,7 @@ export async function downloadOutputWithNotification(output, addToast, debug = f
     return;
   }
 
-  const url = output?.url || output?.value?.url;
-  const filename = generateOutputFilename(output);
+const url = output?.file_url || output?.url || output?.value?.url;  const filename = generateOutputFilename(output);
 
   try {
     if (debug) {
