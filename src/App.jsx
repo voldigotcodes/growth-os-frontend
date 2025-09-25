@@ -12,16 +12,25 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import PricingPage from './pages/PricingPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import { ThemeContext } from './context/ThemeContext.jsx';
+import { usePreferences } from './context/PreferencesContext.jsx';
 
 export default function App() {
   const [theme, setTheme] = useState('dark');
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const { preferences } = usePreferences();
 
   useEffect(() => {
     const body = document.body;
     body.classList.remove('theme-dark', 'theme-light');
     body.classList.add(`theme-${theme}`);
   }, [theme]);
+
+  // Apply accent color to body
+  useEffect(() => {
+    const body = document.body;
+    body.classList.remove('accent-purple', 'accent-blue', 'accent-emerald', 'accent-pink');
+    body.classList.add(`accent-${preferences.interface.accentColor}`);
+  }, [preferences.interface.accentColor]);
 
   const contextValue = useMemo(
     () => ({

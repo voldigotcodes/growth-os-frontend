@@ -2,10 +2,12 @@ import { useState } from 'react';
 import GlassCard from '../components/GlassCard.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useToast } from '../components/ToastContext.jsx';
+import { usePreferences } from '../context/PreferencesContext.jsx';
 
 export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
   const { addToast } = useToast();
+  const { preferences, updatePreference, resetPreferences } = usePreferences();
   const isDark = theme === 'dark';
 
   const [profile, setProfile] = useState({
@@ -15,24 +17,6 @@ export default function SettingsPage() {
     timezone: 'America/New_York',
   });
 
-  const [preferences, setPreferences] = useState({
-    notifications: {
-      workflowComplete: true,
-      creditLimitReached: true,
-      weeklyDigest: false,
-      newFeatures: true,
-    },
-    workflow: {
-      autoSave: true,
-      showTooltips: true,
-      animationSpeed: 'normal',
-    },
-    interface: {
-      compactMode: false,
-      showDescriptions: true,
-      accentColor: 'purple',
-    },
-  });
 
   const subtleText = isDark ? 'text-white/60' : 'text-slate-500';
   const labelText = isDark ? 'text-white/80' : 'text-slate-700';
@@ -44,17 +28,10 @@ export default function SettingsPage() {
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePreferenceChange = (category, field, value) => {
-    setPreferences((prev) => ({
-      ...prev,
-      [category]: { ...prev[category], [field]: value },
-    }));
-  };
 
   const handleSaveSettings = () => {
-    // Save settings to localStorage or backend
+    // Save profile to localStorage (preferences are auto-saved by context)
     localStorage.setItem('growth-os-profile', JSON.stringify(profile));
-    localStorage.setItem('growth-os-preferences', JSON.stringify(preferences));
     addToast('Settings saved successfully!', 'success');
   };
 
@@ -198,7 +175,7 @@ export default function SettingsPage() {
                     <button
                       key={color.value}
                       type="button"
-                      onClick={() => handlePreferenceChange('interface', 'accentColor', color.value)}
+                      onClick={() => updatePreference('interface', 'accentColor', color.value)}
                       className={[
                         'flex items-center gap-3 rounded-xl border p-3 text-left text-sm transition-all',
                         preferences.interface.accentColor === color.value
@@ -229,7 +206,7 @@ export default function SettingsPage() {
                   <input
                     type="checkbox"
                     checked={preferences.interface.compactMode}
-                    onChange={(e) => handlePreferenceChange('interface', 'compactMode', e.target.checked)}
+                    onChange={(e) => updatePreference('interface', 'compactMode', e.target.checked)}
                     className="h-4 w-4 rounded border-white/20 bg-white/10"
                   />
                 </label>
@@ -241,7 +218,7 @@ export default function SettingsPage() {
                   <input
                     type="checkbox"
                     checked={preferences.interface.showDescriptions}
-                    onChange={(e) => handlePreferenceChange('interface', 'showDescriptions', e.target.checked)}
+                    onChange={(e) => updatePreference('interface', 'showDescriptions', e.target.checked)}
                     className="h-4 w-4 rounded border-white/20 bg-white/10"
                   />
                 </label>
@@ -262,7 +239,7 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={preferences.notifications.workflowComplete}
-                  onChange={(e) => handlePreferenceChange('notifications', 'workflowComplete', e.target.checked)}
+                  onChange={(e) => updatePreference('notifications', 'workflowComplete', e.target.checked)}
                   className="h-4 w-4 rounded border-white/20 bg-white/10"
                 />
               </label>
@@ -274,7 +251,7 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={preferences.notifications.creditLimitReached}
-                  onChange={(e) => handlePreferenceChange('notifications', 'creditLimitReached', e.target.checked)}
+                  onChange={(e) => updatePreference('notifications', 'creditLimitReached', e.target.checked)}
                   className="h-4 w-4 rounded border-white/20 bg-white/10"
                 />
               </label>
@@ -286,7 +263,7 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={preferences.notifications.weeklyDigest}
-                  onChange={(e) => handlePreferenceChange('notifications', 'weeklyDigest', e.target.checked)}
+                  onChange={(e) => updatePreference('notifications', 'weeklyDigest', e.target.checked)}
                   className="h-4 w-4 rounded border-white/20 bg-white/10"
                 />
               </label>
@@ -298,7 +275,7 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={preferences.notifications.newFeatures}
-                  onChange={(e) => handlePreferenceChange('notifications', 'newFeatures', e.target.checked)}
+                  onChange={(e) => updatePreference('notifications', 'newFeatures', e.target.checked)}
                   className="h-4 w-4 rounded border-white/20 bg-white/10"
                 />
               </label>
@@ -315,7 +292,7 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={preferences.workflow.autoSave}
-                  onChange={(e) => handlePreferenceChange('workflow', 'autoSave', e.target.checked)}
+                  onChange={(e) => updatePreference('workflow', 'autoSave', e.target.checked)}
                   className="h-4 w-4 rounded border-white/20 bg-white/10"
                 />
               </label>
@@ -327,7 +304,7 @@ export default function SettingsPage() {
                 <input
                   type="checkbox"
                   checked={preferences.workflow.showTooltips}
-                  onChange={(e) => handlePreferenceChange('workflow', 'showTooltips', e.target.checked)}
+                  onChange={(e) => updatePreference('workflow', 'showTooltips', e.target.checked)}
                   className="h-4 w-4 rounded border-white/20 bg-white/10"
                 />
               </label>
@@ -338,7 +315,7 @@ export default function SettingsPage() {
                   </span>
                   <select
                     value={preferences.workflow.animationSpeed}
-                    onChange={(e) => handlePreferenceChange('workflow', 'animationSpeed', e.target.value)}
+                    onChange={(e) => updatePreference('workflow', 'animationSpeed', e.target.value)}
                     className={[
                       'w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                       isDark
@@ -385,8 +362,8 @@ export default function SettingsPage() {
                 onClick={() => {
                   if (confirm('This will reset all settings to defaults. Continue?')) {
                     localStorage.removeItem('growth-os-profile');
-                    localStorage.removeItem('growth-os-preferences');
-                    window.location.reload();
+                    resetPreferences();
+                    addToast('Settings reset to defaults!', 'success');
                   }
                 }}
               >

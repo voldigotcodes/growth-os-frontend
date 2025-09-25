@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { usePreferences } from '../context/PreferencesContext.jsx';
 import DisabledMenu from './DisabledMenu.jsx';
 
 const navigationSections = [
@@ -37,6 +38,7 @@ const futureFeatures = [
 
 export default function Sidebar() {
   const { theme, toggleTheme } = useTheme();
+  const { preferences } = usePreferences();
   const isDark = theme === 'dark';
 
   return (
@@ -74,9 +76,11 @@ export default function Sidebar() {
             <p className="text-sm font-semibold theme-text-primary">
               {isDark ? 'Activate Light Mode' : 'Return to Midnight Mode'}
             </p>
-            <p className="text-xs theme-text-muted tracking-wide">
-              {isDark ? 'Infuse the glass with aurora hues.' : 'Slide back into the midnight studio.'}
-            </p>
+            {preferences.interface.showDescriptions && (
+              <p className="text-xs theme-text-muted tracking-wide">
+                {isDark ? 'Infuse the glass with aurora hues.' : 'Slide back into the midnight studio.'}
+              </p>
+            )}
           </div>
           <span className="text-xs uppercase tracking-[0.2em] theme-text-muted">
             {isDark ? 'Light' : 'Dark'}
@@ -107,8 +111,8 @@ export default function Sidebar() {
                         : isDark ? 'hover:ring-pink-400/50 text-white/75 hover:text-white' : 'hover:ring-pink-400/50 text-slate-600 hover:text-slate-900',
                       isActive && !item.highlight
                         ? isDark
-                          ? 'ring-2 ring-cyan-300/45 bg-white/10 text-white hover:ring-cyan-300/55'
-                          : 'ring-2 ring-sky-400/50 bg-white/90 text-slate-900 hover:ring-sky-400/60'
+                          ? 'active-nav-item ring-2 bg-white/10 text-white'
+                          : 'active-nav-item ring-2 bg-white/90 text-slate-900'
                         : '',
                     ]
                       .filter(Boolean)
@@ -119,9 +123,11 @@ export default function Sidebar() {
                   <span className="text-base">{item.icon}</span>
                   <div className="flex-1">
                     <span className="block">{item.name}</span>
-                    <span className={`text-xs ${isDark ? 'text-white/40' : 'text-slate-400'} group-hover:text-current transition-colors`}>
-                      {item.description}
-                    </span>
+                    {preferences.interface.showDescriptions && (
+                      <span className={`text-xs ${isDark ? 'text-white/40' : 'text-slate-400'} group-hover:text-current transition-colors`}>
+                        {item.description}
+                      </span>
+                    )}
                   </div>
                 </NavLink>
               ))}
