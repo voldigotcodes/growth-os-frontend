@@ -25,6 +25,11 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 function Shell() {
   const [theme, setTheme] = useState('dark');
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [backgroundImages, setBackgroundImages] = useState(() => {
+    // Load from localStorage if available
+    const saved = localStorage.getItem('growth-os-backgrounds');
+    return saved ? JSON.parse(saved) : { light: null, dark: null };
+  });
   const { preferences } = usePreferences();
   const { displayName } = useProfile();
   const navigate = useNavigate();
@@ -50,15 +55,48 @@ function Shell() {
     const body = document.body;
     body.classList.remove('theme-dark', 'theme-light');
     body.classList.add(`theme-${theme}`);
-  }, [theme]);
 
+    // Apply custom background image if set
+    const currentBg = backgroundImages[theme];
+    if (currentBg) {
+      body.style.backgroundImage = `url(${currentBg})`;
+      body.style.backgroundSize = 'cover';
+      body.style.backgroundPosition = 'center';
+      body.style.backgroundRepeat = 'no-repeat';
+      body.style.backgroundAttachment = 'fixed';
+    } else {
+      // Reset to default CSS backgrounds
+      body.style.backgroundImage = '';
+      body.style.backgroundSize = '';
+      body.style.backgroundPosition = '';
+      body.style.backgroundRepeat = '';
+      body.style.backgroundAttachment = '';
+    }
+  }, [theme, backgroundImages]);
+
+
+  const setBackgroundImage = (mode, imageUrl) => {
+    const newBackgrounds = { ...backgroundImages, [mode]: imageUrl };
+    setBackgroundImages(newBackgrounds);
+    // Save to localStorage
+    localStorage.setItem('growth-os-backgrounds', JSON.stringify(newBackgrounds));
+  };
+
+  const resetBackgroundImage = (mode) => {
+    const newBackgrounds = { ...backgroundImages, [mode]: null };
+    setBackgroundImages(newBackgrounds);
+    localStorage.setItem('growth-os-backgrounds', JSON.stringify(newBackgrounds));
+  };
 
   const contextValue = useMemo(
     () => ({
       theme,
       toggleTheme: () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark')),
+      backgroundImages,
+      setBackgroundImage,
+      resetBackgroundImage,
     }),
-    [theme]
+    [theme, backgroundImages]
   );
 
   const isDark = theme === 'dark';

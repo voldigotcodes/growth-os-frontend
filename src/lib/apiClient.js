@@ -44,13 +44,33 @@ async function startAnalyticsSession() {
 async function handleResponse(response) {
   if (!response.ok) {
     let detail = response.statusText;
+    let errorData = null;
+
     try {
       const body = await response.json();
-      detail = body.detail || JSON.stringify(body);
+      errorData = body;
+
+      // Handle structured error responses (especially 402 Payment Required)
+      if (body.detail && typeof body.detail === 'object') {
+        const errorDetail = body.detail;
+        if (errorDetail.error === 'Insufficient credits') {
+          detail = `${errorDetail.message}${errorDetail.upgrade_suggestion ? '\n\n' + errorDetail.upgrade_suggestion : ''}`;
+        } else if (errorDetail.message) {
+          detail = errorDetail.message;
+        } else {
+          detail = errorDetail.error || JSON.stringify(errorDetail);
+        }
+      } else {
+        detail = body.detail || body.message || JSON.stringify(body);
+      }
     } catch (err) {
-      // ignore json parse
+      // ignore json parse errors
     }
-    throw new Error(detail);
+
+    const error = new Error(detail);
+    error.response = response;
+    error.data = errorData;
+    throw error;
   }
   return response.json();
 }

@@ -1,13 +1,11 @@
 import { memo, useState } from 'react';
-
-const baseButton =
-  'inline-flex items-center justify-center rounded-2xl border px-5 py-2 text-sm font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 disabled:opacity-60 disabled:cursor-not-allowed';
+import { glassWorkflow } from '../../utils/glassUI.js';
 
 const variants = {
-  primary: `${baseButton} border-sky-400/60 text-sky-100 hover:bg-sky-500/15`,
-  success: `${baseButton} border-emerald-400/60 text-emerald-100 hover:bg-emerald-500/15`,
-  neutral: `${baseButton} border-white/25 text-white/80 hover:bg-white/15`,
-  danger: `${baseButton} border-rose-400/60 text-rose-200 hover:bg-rose-500/15`,
+  primary: 'px-4 py-2 text-sm font-medium rounded-xl bg-fuchsia-600 hover:bg-fuchsia-700 text-white transition-colors',
+  success: 'px-4 py-2 text-sm font-medium rounded-xl border border-emerald-400/60 text-emerald-100 bg-emerald-600/20 hover:bg-emerald-600/30 transition-colors',
+  neutral: 'px-4 py-2 text-sm font-medium rounded-xl bg-slate-600 hover:bg-slate-700 text-white transition-colors',
+  danger: 'px-4 py-2 text-sm font-medium rounded-xl border border-rose-400/60 text-rose-200 bg-rose-600/20 hover:bg-rose-600/30 transition-colors',
 };
 
 function WorkflowToolbar({
@@ -27,7 +25,7 @@ function WorkflowToolbar({
   const showOverflow = !showDelete || !showClear;
 
   return (
-    <div className="glass-panel glass-static relative flex flex-wrap items-center gap-4 rounded-3xl px-6 py-4 text-sm shadow-[0_18px_45px_rgba(15,23,42,0.25)]">
+    <div className={`${glassWorkflow.toolbar} relative flex flex-wrap items-center gap-4 rounded-3xl px-6 py-4 text-sm`}>
       <button
         type="button"
         className={variants.primary}

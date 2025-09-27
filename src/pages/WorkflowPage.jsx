@@ -927,7 +927,7 @@ function WorkflowPageInner() {
           showClear={!flags.consolidatedActions}
         />
         {(workflowSaveState || workflowRunState) && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs uppercase tracking-[0.3em] text-white/60">
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs uppercase tracking-[0.3em] theme-text-muted">
             {workflowSaveState === 'loading' && <span>Saving workflow… </span>}
             {workflowSaveState === 'success' && <span className="text-emerald-200">Saved</span>}
             {workflowSaveState === 'error' && <span className="text-rose-200">Save failed</span>}
@@ -963,7 +963,7 @@ function WorkflowPageInner() {
                   />
                 </label>
                 {quota?.quota?.credits_remaining?.workflow_runs !== undefined ? (
-                  <p className="text-xs uppercase tracking-[0.35em] text-white/60">
+                  <p className="text-xs uppercase tracking-[0.35em] theme-text-muted">
                     Credits remaining · {quota.quota.credits_remaining.workflow_runs}
                   </p>
                 ) : null}

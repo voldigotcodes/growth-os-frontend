@@ -12,8 +12,9 @@ export default function DashboardPage() {
   const [quotaData, setQuotaData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const labelText = isDark ? 'text-white/80' : 'text-slate-700';
-  const subtleText = isDark ? 'text-white/60' : 'text-slate-500';
+  // Use standard theme text classes for proper contrast
+  const labelText = 'theme-text-primary';
+  const subtleText = 'theme-text-muted';
   const accentEmerald = isDark
     ? 'liquid-button border-emerald-400/60 bg-emerald-500/15 text-emerald-200 hover:ring-emerald-300/50'
     : 'liquid-button border-emerald-200/70 bg-emerald-100/80 text-emerald-600 hover:ring-emerald-200/60';

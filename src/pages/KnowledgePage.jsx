@@ -457,7 +457,8 @@ export default function KnowledgePage() {
     }
   };
 
-  const subtleText = isDark ? 'text-white/60' : 'text-slate-500';
+  // Use standard theme text classes for proper contrast
+  const subtleText = 'theme-text-muted';
 
   if (loading) {
     return (

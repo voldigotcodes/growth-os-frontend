@@ -74,8 +74,9 @@ export default function OnboardingTour({ onComplete }) {
   const [earnedRewards, setEarnedRewards] = useState([]);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  const labelText = isDark ? 'text-white/80' : 'text-slate-700';
-  const subtleText = isDark ? 'text-white/60' : 'text-slate-500';
+  // Use standard theme text classes for proper contrast
+  const labelText = 'theme-text-primary';
+  const subtleText = 'theme-text-muted';
   const accentGradient = 'bg-gradient-to-r from-purple-500 to-pink-500';
 
   useEffect(() => {

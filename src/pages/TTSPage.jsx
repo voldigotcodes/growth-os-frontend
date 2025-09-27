@@ -31,8 +31,9 @@ export default function TTSPage() {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [downloadingTrack, setDownloadingTrack] = useState(false);
 
-  const subtleText = isDark ? 'text-white/60' : 'text-slate-500';
-  const labelText = isDark ? 'text-white/70' : 'text-slate-600';
+  // Use standard theme text classes for proper contrast
+  const labelText = 'theme-text-primary';
+  const subtleText = 'theme-text-muted';
   const neutralAction = isDark
     ? 'liquid-button text-white/85 hover:text-white'
     : 'liquid-button text-slate-700 hover:text-slate-900';

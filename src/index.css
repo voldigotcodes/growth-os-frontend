@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Liquid Glass Design System */
+@import './styles/glass.css';
+
 body {
   @apply min-h-screen font-sans antialiased;
   background-attachment: fixed;
@@ -201,7 +204,7 @@ body.theme-light::after {
     -webkit-backdrop-filter: blur(5px) saturate(120%);
   }
 
-  /* Apple-style keyframes */
+  /* Apple 2025 Liquid Glass keyframes */
   @keyframes spring-in {
     0% {
       opacity: 0;
@@ -230,6 +233,65 @@ body.theme-light::after {
     100% {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  @keyframes liquid-morph {
+    0% {
+      border-radius: var(--lg-radius-md);
+      transform: scale(1);
+    }
+    50% {
+      border-radius: var(--lg-radius-lg);
+      transform: scale(1.02);
+    }
+    100% {
+      border-radius: var(--lg-radius-md);
+      transform: scale(1);
+    }
+  }
+
+  @keyframes liquid-glow {
+    0%, 100% {
+      box-shadow: var(--lg-shadow-surface), 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    50% {
+      box-shadow: var(--lg-shadow-lg), 0 0 40px rgba(59, 130, 246, 0.3);
+    }
+  }
+
+  @keyframes liquid-flow {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  @keyframes glass-ripple {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+
+  @keyframes float-gentle {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    33% {
+      transform: translateY(-10px) rotate(1deg);
+    }
+    66% {
+      transform: translateY(5px) rotate(-1deg);
     }
   }
 

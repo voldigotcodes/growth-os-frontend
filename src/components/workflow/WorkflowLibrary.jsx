@@ -13,7 +13,7 @@ function WorkflowLibrary({ workflows, activeId, onSelect, onDelete, onDeleteAll 
           <button
             type="button"
             onClick={onDeleteAll}
-            className="text-[10px] uppercase tracking-[0.3em] text-white/60 transition hover:text-rose-200"
+            className="text-[10px] uppercase tracking-[0.3em] theme-text-muted transition hover:text-rose-400"
           >
             Clear All
           </button>
@@ -45,7 +45,7 @@ function WorkflowLibrary({ workflows, activeId, onSelect, onDelete, onDeleteAll 
                 >
                   <div className="space-y-1">
                     <p className="text-sm font-semibold theme-text-primary">{workflow.name}</p>
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/60">
+                    <p className="text-[10px] uppercase tracking-[0.3em] theme-text-muted">
                       {timestamp ? new Date(timestamp).toLocaleString() : 'Draft'}
                     </p>
                   </div>

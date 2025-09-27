@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from 'reactflow';
+import { glassWorkflow } from '../../utils/glassUI.js';
 
 function WorkflowEdge({ id, sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, data }) {
   const [path, labelX, labelY] = getBezierPath({
@@ -16,12 +17,19 @@ function WorkflowEdge({ id, sourceX, sourceY, sourcePosition, targetX, targetY, 
 
   return (
     <>
+      {/* Main edge path */}
       <BaseEdge
         id={id}
         path={path}
-        className={`stroke-[3px] ${active ? 'stroke-[url(#wf-edge-active)] animate-dash' : 'stroke-white/40'}`}
+        className={active ? 'stroke-fuchsia-400 stroke-[3px]' : glassWorkflow.edge}
+        style={{
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+        }}
       />
-      {label ? (
+
+      {/* Label */}
+      {label && (
         <EdgeLabelRenderer>
           <span
             style={{
@@ -29,12 +37,12 @@ function WorkflowEdge({ id, sourceX, sourceY, sourcePosition, targetX, targetY, 
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
               pointerEvents: 'none',
             }}
-            className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.3em] text-white/80 backdrop-blur"
+            className="rounded-full bg-slate-800 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.3em] text-white"
           >
             {label}
           </span>
         </EdgeLabelRenderer>
-      ) : null}
+      )}
     </>
   );
 }

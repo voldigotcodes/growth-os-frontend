@@ -34,7 +34,8 @@ export default function DownloadPage() {
   const [saveToWorkspace, setSaveToWorkspace] = useState(true);
   const [downloadingFile, setDownloadingFile] = useState(false);
 
-  const subtleText = isDark ? 'text-white/60' : 'text-slate-500';
+  // Use standard theme text classes for proper contrast
+  const subtleText = 'theme-text-muted';
   const outlineButton = isDark
     ? 'liquid-button text-white/85 hover:text-white'
     : 'liquid-button text-slate-700 hover:text-slate-900';

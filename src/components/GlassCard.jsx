@@ -158,9 +158,7 @@ export default function GlassCard({
             <div className="space-y-1">
               {title && <h2 className="text-lg font-semibold leading-6 theme-text-primary">{title}</h2>}
               {subtitle && (
-                <p
-                  className={`text-xs leading-5 line-clamp-1 ${isDark ? 'text-white/60' : 'text-slate-500'}`}
-                >
+                <p className="text-xs leading-5 line-clamp-1 theme-text-muted">
                   {subtitle}
                 </p>
               )}
@@ -168,7 +166,7 @@ export default function GlassCard({
             {actions && <div className="flex items-center gap-3">{actions}</div>}
           </header>
         )}
-        <div className={['relative z-10 space-y-6', isDark ? 'text-white/80' : 'text-slate-600'].join(' ')}>
+        <div className="relative z-10 space-y-6 theme-text-secondary">
           {children}
         </div>
       </section>

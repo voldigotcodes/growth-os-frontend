@@ -35,7 +35,7 @@ function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onVie
           <button
             type="button"
             onClick={onDeleteAll}
-            className="text-[10px] uppercase tracking-[0.3em] text-white/60 transition hover:text-rose-200"
+            className="text-[10px] uppercase tracking-[0.3em] theme-text-muted transition hover:text-rose-400"
           >
             Clear All
           </button>
@@ -76,24 +76,24 @@ function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onVie
                 <div className="text-right text-[11px] uppercase tracking-[0.3em] theme-text-muted">
                   <p>{entry.status === 'failed' ? 'Review' : 'View'}</p>
                   {formatCredits(entry.credits) !== null && (
-                    <p className="mt-1 text-white/70">-{formatCredits(entry.credits)} credits</p>
+                    <p className="mt-1 theme-text-secondary">-{formatCredits(entry.credits)} credits</p>
                   )}
                 </div>
                 </div>
                    <div className="space-y-1">
                     <p className="font-semibold theme-text-primary">{entry.workflowName}</p>
-                    <p className="text-[11px] uppercase tracking-[0.3em] theme-text-primary/60">
+                    <p className="text-[11px] uppercase tracking-[0.3em] theme-text-muted">
                       {new Date(entry.startedAt).toLocaleString()} · {entry.durationLabel}
                     </p>
                   </div>
-              <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-white/70">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.25em] theme-text-secondary">
                 <button
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
                     onRerun?.(entry);
                   }}
-                  className="rounded-full border border-white/20 px-3 py-1 text-xs hover:border-emerald-300/60 hover:text-emerald-200"
+                  className="rounded-full border border-white/20 dark:border-white/20 border-slate-300/60 px-3 py-1 text-xs hover:border-emerald-300/60 hover:text-emerald-500 dark:hover:text-emerald-200"
                 >
                   Rerun
                 </button>
@@ -103,7 +103,7 @@ function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onVie
                     event.stopPropagation();
                     onOpenOutputs?.(entry);
                   }}
-                  className="rounded-full border border-white/20 px-3 py-1 text-xs hover:border-sky-300/60 hover:text-sky-200"
+                  className="rounded-full border border-white/20 dark:border-white/20 border-slate-300/60 px-3 py-1 text-xs hover:border-sky-300/60 hover:text-sky-500 dark:hover:text-sky-200"
                 >
                   Open Outputs
                 </button>
@@ -113,7 +113,7 @@ function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onVie
                     event.stopPropagation();
                     onViewLogs?.(entry);
                   }}
-                  className="rounded-full border border-white/20 px-3 py-1 text-xs hover:border-pink-300/60 hover:text-pink-200"
+                  className="rounded-full border border-white/20 dark:border-white/20 border-slate-300/60 px-3 py-1 text-xs hover:border-pink-300/60 hover:text-pink-500 dark:hover:text-pink-200"
                 >
                   View Logs
                   </button>
@@ -121,7 +121,7 @@ function WorkflowHistory({ history = [], onSelect, onRerun, onOpenOutputs, onVie
                   type="button"
                     onClick={(event) => {event.stopPropagation();
                     onDelete?.(entry);}}
-                  className="rounded-full border border-white/20 px-3 py-1 text-xs hover:bg-rose-500/80"
+                  className="rounded-full border border-white/20 dark:border-white/20 border-slate-300/60 px-3 py-1 text-xs hover:bg-rose-500/80 hover:text-white"
                 >
                   Delete Run
                 </button>

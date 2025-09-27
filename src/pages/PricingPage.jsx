@@ -13,8 +13,9 @@ export default function PricingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpgrading, setIsUpgrading] = useState(null);
 
-  const labelText = isDark ? 'text-white/80' : 'text-slate-700';
-  const subtleText = isDark ? 'text-white/60' : 'text-slate-500';
+  // Use standard theme text classes for proper contrast
+  const labelText = 'theme-text-primary';
+  const subtleText = 'theme-text-muted';
   const accentPurple = isDark
     ? 'liquid-button border-purple-400/60 bg-purple-500/15 text-purple-200 hover:ring-purple-300/50'
     : 'liquid-button border-purple-200/70 bg-purple-100/80 text-purple-600 hover:ring-purple-200/60';
@@ -141,8 +142,11 @@ export default function PricingPage() {
         <p className={`text-lg ${subtleText} mt-2`}>Scale your content creation with the perfect plan for you</p>
 
         {currentTier && (
-          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-full">
-            <span className="text-sm font-medium">Current Plan: {currentTier.toUpperCase()}</span>
+          <div className="mt-4">
+            <div className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full ${isDark ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-700/50' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Current Plan: {currentTier.toUpperCase()}
+            </div>
           </div>
         )}
       </div>
@@ -154,24 +158,19 @@ export default function PricingPage() {
 
           return (
             <GlassCard
-  key={tier.tier}
-  className={`relative overflow-hidden pt-8 ${
-    tier.popular
-      ? 'ring-2 ring-purple-500/50 bg-gradient-to-b from-purple-500/10 to-transparent'
-      : ''
-  }`}
->
-  {tier.popular && (
-    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full">
-      <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white 
-                      px-1.5 py-0.5 whitespace-nowrap text-[1px] 
-                      sm:px-3 sm:py-1 sm:text-sm 
-                      md:px-4 md:py-1.5 md:text-base 
-                      rounded-full font-medium shadow-md">
-        Most Popular
-      </div>
-    </div>
-  )}
+              key={tier.tier}
+              className={[
+                'relative',
+                tier.popular ? 'overflow-visible pt-8' : 'overflow-hidden pt-8', // Reserve space for badge
+              ].filter(Boolean).join(' ')}
+            >
+              {tier.popular && (
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <div className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap ${isDark ? 'bg-fuchsia-600 text-white' : 'bg-fuchsia-500 text-white'}`}>
+                    Most Popular
+                  </div>
+                </div>
+              )}
 
               <div className="text-center mb-6 mt-2">
                 <h3 className={`text-xl font-bold ${labelText} mb-2`}>{tier.name}</h3>
@@ -246,25 +245,29 @@ export default function PricingPage() {
                 ))}
               </div>
 
-              {/* CTA Button */}
+              {/* Enhanced CTA Button with Liquid Glass styling */}
               <div className="mt-auto">
                 {isCurrentTier ? (
-                  <div className="w-full py-3 text-center bg-emerald-500/20 text-emerald-400 rounded-lg border border-emerald-500/30 font-medium">
+                  <div className={`w-full py-3 text-center font-medium rounded-xl ${isDark ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-700/50' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
                     Current Plan
                   </div>
                 ) : tier.tier === 'free' ? (
-                  <div className="w-full py-3 text-center bg-white/10 text-white/60 rounded-lg border border-white/20 font-medium">
+                  <div className={`w-full py-3 text-center font-medium rounded-xl ${isDark ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
                     Free Forever
                   </div>
                 ) : (
                   <button
                     onClick={() => handleUpgrade(tier.tier)}
                     disabled={isUpgradingThis}
-                    className={`w-full py-3 text-center font-medium rounded-lg transition-all ${
+                    className={`w-full px-6 py-3 text-base font-medium rounded-xl transition-colors ${
                       tier.popular
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600'
-                        : accentPurple
-                    } ${isUpgradingThis ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        ? isDark
+                          ? 'bg-fuchsia-600 hover:bg-fuchsia-700 text-white'
+                          : 'bg-fuchsia-500 hover:bg-fuchsia-600 text-white'
+                        : isDark
+                        ? 'bg-slate-700 hover:bg-slate-600 text-white border border-slate-600'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-200'
+                    }`}
                   >
                     {isUpgradingThis ? 'Upgrading...' : `Upgrade to ${tier.name}`}
                   </button>

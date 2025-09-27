@@ -20,7 +20,8 @@ export default function TranscribePage() {
   const [scriptTitle, setScriptTitle] = useState('');
   const [isSavingScript, setIsSavingScript] = useState(false);
 
-  const subtleText = isDark ? 'text-white/60' : 'text-slate-500';
+  // Use standard theme text classes for proper contrast
+  const subtleText = 'theme-text-muted';
   const secondaryButton = isDark
     ? 'liquid-button px-4 py-2 text-xs font-medium border-white/15 text-white/70 hover:text-white'
     : 'liquid-button px-4 py-2 text-xs font-medium border-slate-200/70 text-slate-600 hover:text-slate-900';
@@ -42,7 +43,16 @@ export default function TranscribePage() {
       setTranscript(result);
       addToast('Transcript ready to refine.');
     } catch (error) {
-      addToast(error.message || 'Transcription failed.', 'error');
+      // Handle credit-related errors specially
+      if (error.response?.status === 402 && error.data?.detail?.error === 'Insufficient credits') {
+        const errorDetail = error.data.detail;
+        addToast(
+          `Not enough transcription credits. You need ${errorDetail.required_credits || 'more'} minute(s). ${errorDetail.upgrade_suggestion || 'Please upgrade your plan.'}`,
+          'error'
+        );
+      } else {
+        addToast(error.message || 'Transcription failed.', 'error');
+      }
     } finally {
       setIsTranscribing(false);
     }
