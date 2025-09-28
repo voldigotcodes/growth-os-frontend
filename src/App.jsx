@@ -6,9 +6,11 @@ import OnboardingTour from './components/OnboardingTour.jsx';
 import { ThemeContext } from './context/ThemeContext.jsx';
 import { usePreferences } from './context/PreferencesContext.jsx';
 import { useProfile } from './context/ProfileContext.jsx';
+import { useDynamicTextColor } from './hooks/useDynamicTextColor.js';
 import { FeatureFlagProvider } from './context/FeatureFlagContext.jsx';
 import { StatusProvider } from './context/StatusContext.jsx';
 import { ProfileProvider } from './context/ProfileContext.jsx';
+import { getThemeById, getDefaultTheme } from './config/themes.js';
 import GlobalCommandPalette from './components/GlobalCommandPalette.jsx';
 import ShortcutHints from './components/ShortcutHints.jsx';
 
@@ -30,10 +32,16 @@ function Shell() {
     const saved = localStorage.getItem('growth-os-backgrounds');
     return saved ? JSON.parse(saved) : { light: null, dark: null };
   });
+  const [selectedThemeId, setSelectedThemeId] = useState(() => {
+    // Load selected theme from localStorage
+    const saved = localStorage.getItem('growth-os-selected-theme');
+    return saved || 'default';
+  });
   const { preferences } = usePreferences();
   const { displayName } = useProfile();
   const navigate = useNavigate();
   const location = useLocation();
+  const { primaryText } = useDynamicTextColor();
 
   const routes = ['/dashboard', '/download', '/transcribe', '/tts', '/workflows', '/workspace', '/knowledge', '/settings', '/pricing'];
   const currentIndex = routes.indexOf(location.pathname);
@@ -56,9 +64,21 @@ function Shell() {
     body.classList.remove('theme-dark', 'theme-light');
     body.classList.add(`theme-${theme}`);
 
-    // Apply custom background image if set
-    const currentBg = backgroundImages[theme];
-    if (currentBg) {
+    // Apply predefined theme background or custom image
+    const selectedTheme = getThemeById(selectedThemeId);
+    let currentBg = null;
+
+    if (selectedTheme && selectedTheme[theme]) {
+      // Use predefined theme gradient
+      currentBg = selectedTheme[theme];
+      body.style.backgroundImage = currentBg;
+      body.style.backgroundSize = 'cover';
+      body.style.backgroundPosition = 'center';
+      body.style.backgroundRepeat = 'no-repeat';
+      body.style.backgroundAttachment = 'fixed';
+    } else if (backgroundImages[theme]) {
+      // Fallback to custom uploaded image (for backwards compatibility)
+      currentBg = backgroundImages[theme];
       body.style.backgroundImage = `url(${currentBg})`;
       body.style.backgroundSize = 'cover';
       body.style.backgroundPosition = 'center';
@@ -72,7 +92,7 @@ function Shell() {
       body.style.backgroundRepeat = '';
       body.style.backgroundAttachment = '';
     }
-  }, [theme, backgroundImages]);
+  }, [theme, backgroundImages, selectedThemeId]);
 
 
   const setBackgroundImage = (mode, imageUrl) => {
@@ -80,6 +100,30 @@ function Shell() {
     setBackgroundImages(newBackgrounds);
     // Save to localStorage
     localStorage.setItem('growth-os-backgrounds', JSON.stringify(newBackgrounds));
+  };
+
+  const setSelectedTheme = (themeId) => {
+    setSelectedThemeId(themeId);
+    localStorage.setItem('growth-os-selected-theme', themeId);
+
+    // Apply the theme's background to both light and dark modes
+    const selectedTheme = getThemeById(themeId);
+    if (selectedTheme) {
+      const newBackgrounds = {
+        light: selectedTheme.light,
+        dark: selectedTheme.dark
+      };
+      setBackgroundImages(newBackgrounds);
+      localStorage.setItem('growth-os-backgrounds', JSON.stringify(newBackgrounds));
+    }
+  };
+
+  const getCurrentBackgroundStyle = () => {
+    const selectedTheme = getThemeById(selectedThemeId);
+    if (!selectedTheme) return null;
+
+    const currentBackground = selectedTheme[theme];
+    return currentBackground ? { backgroundImage: currentBackground } : null;
   };
 
   const resetBackgroundImage = (mode) => {
@@ -95,8 +139,11 @@ function Shell() {
       backgroundImages,
       setBackgroundImage,
       resetBackgroundImage,
+      selectedThemeId,
+      setSelectedTheme,
+      getCurrentBackgroundStyle,
     }),
-    [theme, backgroundImages]
+    [theme, backgroundImages, selectedThemeId]
   );
 
   const isDark = theme === 'dark';
@@ -113,7 +160,7 @@ function Shell() {
         ref={swipeGestureRef}
         className={[
           'relative flex h-screen overflow-hidden transition-colors duration-500 ease-out',
-          isDark ? 'text-slate-100' : 'text-slate-700',
+          primaryText,
         ].join(' ')}
       >
         <div
@@ -124,9 +171,35 @@ function Shell() {
               : 'bg-gradient-to-br from-emerald-100/40 via-white/60 to-pink-100/50',
           ].join(' ')}
         />
-        <Sidebar />
-        <main className="relative flex-1 overflow-y-auto">
-          <div className="flex flex-col gap-8 md:gap-12 px-8 py-8 md:px-12 md:py-12">
+        {/* Left panel with stronger background blur */}
+        <div className="relative w-72 shrink-0 h-screen">
+          {/* Background overlay for left panel - more blurred - covers full height */}
+          <div
+            className="fixed top-0 bottom-0 left-0 pointer-events-none z-0"
+            style={{
+              width: '18rem', // 72 * 0.25rem = 18rem (sidebar width)
+              backdropFilter: 'blur(20px) saturate(150%)',
+              backgroundColor: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.85)'
+            }}
+          />
+          <div className="relative z-10">
+            <Sidebar />
+          </div>
+        </div>
+        {/* Right panel with lighter background blur */}
+        <main className="relative flex-1 h-screen">
+          {/* Background overlay for right panel - less blurred - covers full scrollable area */}
+          <div
+            className="fixed top-0 bottom-0 pointer-events-none z-0"
+            style={{
+              left: '18rem', // 72 * 0.25rem = 18rem (sidebar width)
+              right: '0',
+              backdropFilter: 'blur(8px) saturate(120%)',
+              backgroundColor: isDark ? 'rgba(15, 23, 42, 0.70)' : 'rgba(255, 255, 255, 0.70)'
+            }}
+          />
+          <div className="relative z-10 h-full overflow-y-auto">
+            <div className="flex flex-col gap-8 md:gap-12 px-8 py-8 md:px-12 md:py-12">
             <div className="glass-panel flex flex-wrap items-center justify-between gap-4 px-6 py-4 text-sm animate-fade-in">
               <div>
                 <p className="text-base font-medium theme-text-primary">Welcome back, {displayName}.</p>
@@ -140,7 +213,7 @@ function Shell() {
               </div>
             </div>
 
-            <Suspense fallback={<div className="text-sm text-white/60 animate-fade-in">Charging the glass interface…</div>}>
+            <Suspense fallback={<div className="text-sm animate-fade-in" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Charging the glass interface…</div>}>
               <div className="animate-slide-up">
                 <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -157,6 +230,7 @@ function Shell() {
                 </Routes>
               </div>
             </Suspense>
+            </div>
           </div>
         </main>
 

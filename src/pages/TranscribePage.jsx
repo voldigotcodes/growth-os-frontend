@@ -32,8 +32,8 @@ export default function TranscribePage() {
     ? 'liquid-button px-4 py-2 text-xs font-semibold border-emerald-400/60 bg-emerald-500/20 text-emerald-100 hover:ring-emerald-300/55'
     : 'liquid-button px-4 py-2 text-xs font-semibold border-emerald-200/70 bg-emerald-100/80 text-emerald-700 hover:ring-emerald-200/60';
   const iconTile = isDark
-    ? 'flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-base'
-    : 'flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200/70 bg-white/80 text-base text-slate-600';
+    ? 'flex h-10 w-10 items-center justify-center rounded-md border border-white/10 bg-white/10 text-base'
+    : 'flex h-10 w-10 items-center justify-center rounded-md border border-slate-200/70 bg-white/80 text-base text-slate-600';
 
   const handleFile = async (file) => {
     setIsTranscribing(true);
@@ -182,7 +182,7 @@ export default function TranscribePage() {
                 <span className="text-xs uppercase tracking-[0.3em] theme-text-muted">Transcript</span>
                 <textarea
                   className={[
-                    'min-h-[180px] w-full resize-y rounded-2xl border px-4 py-3 text-sm shadow-inner focus:outline-none focus:ring-2',
+                    'min-h-[180px] w-full resize-y rounded-md border px-4 py-3 text-sm shadow-inner focus:outline-none focus:ring-2',
                     isDark
                       ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                       : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -196,7 +196,7 @@ export default function TranscribePage() {
                 <span className="text-xs uppercase tracking-[0.3em] theme-text-muted">Refinement instruction</span>
                 <textarea
                   className={[
-                    'min-h-[120px] w-full resize-y rounded-2xl border px-4 py-3 text-sm shadow-inner focus:outline-none focus:ring-2',
+                    'min-h-[120px] w-full resize-y rounded-md border px-4 py-3 text-sm shadow-inner focus:outline-none focus:ring-2',
                     isDark
                       ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                       : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -207,7 +207,7 @@ export default function TranscribePage() {
               </label>
               {modifiedText && (
                 <div className="space-y-4">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
+                  <div className="rounded-md border border-white/10 bg-white/5 px-4 py-3 text-sm">
                     <p className="text-xs uppercase tracking-[0.3em] theme-text-muted">Polished Script</p>
                     <p className="mt-2 whitespace-pre-line theme-text-secondary">{modifiedText}</p>
                   </div>
@@ -217,7 +217,7 @@ export default function TranscribePage() {
                       <input
                         type="text"
                         className={[
-                          'w-full rounded-2xl border px-4 py-3 text-sm shadow-inner focus:outline-none focus:ring-2',
+                          'w-full rounded-md border px-4 py-3 text-sm shadow-inner focus:outline-none focus:ring-2',
                           isDark
                             ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                             : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',

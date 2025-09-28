@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { usePreferences } from '../context/PreferencesContext.jsx';
 import { useProfile } from '../context/ProfileContext.jsx';
+import { useDynamicTextColor } from '../hooks/useDynamicTextColor.js';
 import DisabledMenu from './DisabledMenu.jsx';
 
 const navigationSections = [
@@ -41,10 +42,11 @@ export default function Sidebar() {
   const { theme, toggleTheme } = useTheme();
   const { preferences } = usePreferences();
   const { displayName, companyName } = useProfile();
+  const { primaryText, secondaryText, mutedText } = useDynamicTextColor();
   const isDark = theme === 'dark';
 
   return (
-    <aside className={`relative flex h-screen w-72 flex-col overflow-hidden border-r transition-all duration-500 ease-out ${isDark ? 'border-slate-800 bg-slate-950 text-slate-100' : 'border-slate-200 bg-white text-slate-700'}`}>
+    <aside className={`relative flex h-screen w-full flex-col overflow-hidden border-r transition-all duration-500 ease-out ${isDark ? 'border-slate-800' : 'border-slate-200'} ${primaryText}`}>
       {/* Sticky Header Section */}
       <div className="shrink-0 space-y-4 px-6 py-10">
         {/* Company badge */}

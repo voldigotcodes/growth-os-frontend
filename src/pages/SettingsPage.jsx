@@ -5,9 +5,10 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { useToast } from '../components/ToastContext.jsx';
 import { usePreferences } from '../context/PreferencesContext.jsx';
 import { useProfile } from '../context/ProfileContext.jsx';
+import { predefinedThemes, themeCategories } from '../config/themes.js';
 
 export default function SettingsPage() {
-  const { theme, toggleTheme, backgroundImages, setBackgroundImage, resetBackgroundImage } = useTheme();
+  const { theme, toggleTheme, backgroundImages, setBackgroundImage, resetBackgroundImage, selectedThemeId, setSelectedTheme } = useTheme();
   const { addToast } = useToast();
   const { preferences, updatePreference, resetPreferences } = usePreferences();
   const { profile, updateProfile, updateMultipleFields, resetProfile } = useProfile();
@@ -90,7 +91,7 @@ export default function SettingsPage() {
                   onChange={(e) => handleProfileChange('name', e.target.value)}
                   placeholder="Your display name"
                   className={[
-                    'w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                    'w-full rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                     isDark
                       ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                       : 'border-slate-200/70 bg-white/85 text-slate-600 focus:border-sky-300 focus:ring-sky-200',
@@ -108,7 +109,7 @@ export default function SettingsPage() {
                   onChange={(e) => handleProfileChange('email', e.target.value)}
                   placeholder="your.email@company.com"
                   className={[
-                    'w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                    'w-full rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                     isDark
                       ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                       : 'border-slate-200/70 bg-white/85 text-slate-600 focus:border-sky-300 focus:ring-sky-200',
@@ -126,7 +127,7 @@ export default function SettingsPage() {
                   onChange={(e) => handleProfileChange('company', e.target.value)}
                   placeholder="e.g. Growth Studio, Acme Corp"
                   className={[
-                    'w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                    'w-full rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                     isDark
                       ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                       : 'border-slate-200/70 bg-white/85 text-slate-600 focus:border-sky-300 focus:ring-sky-200',
@@ -142,7 +143,7 @@ export default function SettingsPage() {
                   value={profile.timezone}
                   onChange={(e) => handleProfileChange('timezone', e.target.value)}
                   className={[
-                    'w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                    'w-full rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                     isDark
                       ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                       : 'border-slate-200/70 bg-white/85 text-slate-600 focus:border-sky-300 focus:ring-sky-200',
@@ -169,7 +170,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={toggleTheme}
                   className={[
-                    'flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition-all',
+                    'flex w-full items-center gap-3 rounded-md border p-4 text-left transition-all',
                     isDark
                       ? 'border-white/15 bg-white/5 hover:bg-white/10'
                       : 'border-slate-200/70 bg-white/80 hover:bg-white/90',
@@ -188,119 +189,87 @@ export default function SettingsPage() {
                 </button>
               </div>
 
-              {/* Background Image Settings */}
-              <div className="space-y-3">
-                <span className="block text-xs uppercase tracking-[0.3em] theme-text-muted">
-                  Background Images
-                </span>
-
-                {/* Dark Mode Background */}
+              {/* Background Theme Settings */}
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className={`block text-sm font-medium ${labelText}`}>
-                    Dark Mode Background
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <input
-                        type="file"
-                        id="dark-background"
-                        accept="image/*"
-                        onChange={(e) => handleBackgroundImageUpload('dark', e)}
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="dark-background"
-                        className={[
-                          'flex cursor-pointer items-center justify-center rounded-xl border border-dashed px-4 py-3 text-sm transition-colors',
-                          isDark
-                            ? 'border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white'
-                            : 'border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900',
-                        ].join(' ')}
-                      >
-                        <span className="mr-2">🖼️</span>
-                        {backgroundImages.dark ? 'Change Dark Background' : 'Upload Dark Background'}
-                      </label>
-                    </div>
-                    {backgroundImages.dark && (
-                      <button
-                        type="button"
-                        onClick={() => handleResetBackground('dark')}
-                        className={[
-                          'rounded-lg px-3 py-2 text-xs font-medium transition-colors',
-                          isDark
-                            ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            : 'bg-slate-200 text-slate-700 hover:bg-slate-300',
-                        ].join(' ')}
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </div>
-                  {backgroundImages.dark && (
-                    <div className="mt-2">
-                      <div className="h-20 w-32 rounded-lg border border-white/20 bg-cover bg-center bg-no-repeat"
-                           style={{ backgroundImage: `url(${backgroundImages.dark})` }}>
-                      </div>
-                      <p className={`mt-1 text-xs ${subtleText}`}>Preview (dark mode background)</p>
-                    </div>
-                  )}
+                  <span className="block text-xs uppercase tracking-[0.3em] theme-text-muted">
+                    Background Theme
+                  </span>
+                  <p className={`text-sm ${subtleText}`}>
+                    Choose a predefined theme that applies to both light and dark modes
+                  </p>
                 </div>
 
-                {/* Light Mode Background */}
-                <div className="space-y-2">
-                  <label className={`block text-sm font-medium ${labelText}`}>
-                    Light Mode Background
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <input
-                        type="file"
-                        id="light-background"
-                        accept="image/*"
-                        onChange={(e) => handleBackgroundImageUpload('light', e)}
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="light-background"
-                        className={[
-                          'flex cursor-pointer items-center justify-center rounded-xl border border-dashed px-4 py-3 text-sm transition-colors',
-                          isDark
-                            ? 'border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white'
-                            : 'border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900',
-                        ].join(' ')}
-                      >
-                        <span className="mr-2">🌅</span>
-                        {backgroundImages.light ? 'Change Light Background' : 'Upload Light Background'}
-                      </label>
-                    </div>
-                    {backgroundImages.light && (
+                {/* Theme Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {predefinedThemes.map((themeOption) => {
+                    const isSelected = selectedThemeId === themeOption.id;
+                    return (
                       <button
+                        key={themeOption.id}
                         type="button"
-                        onClick={() => handleResetBackground('light')}
+                        onClick={() => {
+                          setSelectedTheme(themeOption.id);
+                          addToast(`Applied "${themeOption.name}" theme`, 'success');
+                        }}
                         className={[
-                          'rounded-lg px-3 py-2 text-xs font-medium transition-colors',
-                          isDark
-                            ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            : 'bg-slate-200 text-slate-700 hover:bg-slate-300',
+                          'group relative flex flex-col gap-2 rounded-md border p-3 text-left transition-all',
+                          isSelected
+                            ? isDark
+                              ? 'border-sky-400/60 bg-sky-500/10 ring-2 ring-sky-400/40'
+                              : 'border-sky-500/60 bg-sky-50 ring-2 ring-sky-500/40'
+                            : isDark
+                              ? 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                              : 'border-slate-200 bg-white/50 hover:bg-slate-50 hover:border-slate-300',
                         ].join(' ')}
                       >
-                        Reset
+                        {/* Theme Preview */}
+                        <div
+                          className="h-12 w-full rounded-sm border border-white/20 overflow-hidden"
+                          style={{
+                            background: themeOption.preview,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center'
+                          }}
+                        >
+                          {/* Selection indicator */}
+                          {isSelected && (
+                            <div className="flex h-full w-full items-center justify-center bg-black/20">
+                              <span className="text-white text-lg font-bold">✓</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Theme Info */}
+                        <div className="space-y-1">
+                          <h4 className={`text-sm font-medium ${isSelected ? (isDark ? 'text-sky-200' : 'text-sky-700') : 'theme-text-primary'}`}>
+                            {themeOption.name}
+                          </h4>
+                          <p className={`text-xs ${isSelected ? (isDark ? 'text-sky-300/80' : 'text-sky-600/80') : 'theme-text-muted'}`}>
+                            {themeOption.description}
+                          </p>
+                        </div>
                       </button>
-                    )}
-                  </div>
-                  {backgroundImages.light && (
-                    <div className="mt-2">
-                      <div className="h-20 w-32 rounded-lg border border-white/20 bg-cover bg-center bg-no-repeat"
-                           style={{ backgroundImage: `url(${backgroundImages.light})` }}>
-                      </div>
-                      <p className={`mt-1 text-xs ${subtleText}`}>Preview (light mode background)</p>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
 
-                <p className={`text-xs ${subtleText}`}>
-                  Custom backgrounds will override the default gradient backgrounds. Recommended size: 1920x1080 or higher.
-                </p>
+                {/* Current Theme Info */}
+                {selectedThemeId !== 'default' && (
+                  <div className={`rounded-md border p-3 text-sm ${isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-50'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">●</span>
+                      <div>
+                        <p className="font-medium theme-text-primary">
+                          Current: {predefinedThemes.find(t => t.id === selectedThemeId)?.name}
+                        </p>
+                        <p className="text-xs theme-text-muted">
+                          This theme applies automatically to both light and dark modes
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -426,7 +395,7 @@ export default function SettingsPage() {
                     value={preferences.workflow.animationSpeed}
                     onChange={(e) => updatePreference('workflow', 'animationSpeed', e.target.value)}
                     className={[
-                      'w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                      'w-full rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                       isDark
                         ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                         : 'border-slate-200/70 bg-white/85 text-slate-600 focus:border-sky-300 focus:ring-sky-200',

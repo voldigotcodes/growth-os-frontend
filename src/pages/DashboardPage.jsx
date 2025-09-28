@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useToast } from '../components/ToastContext.jsx';
+import { useDynamicTextColor } from '../hooks/useDynamicTextColor.js';
 import GlassCard from '../components/GlassCard.jsx';
 
 export default function DashboardPage() {
   const { theme } = useTheme();
   const { addToast } = useToast();
+  const { primaryText } = useDynamicTextColor();
   const isDark = theme === 'dark';
 
   const [userData, setUserData] = useState(null);
@@ -95,7 +97,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
             <GlassCard key={i} className="animate-pulse">
-              <div className="h-32 bg-white/5 rounded-lg"></div>
+              <div className="h-32 bg-white/5 rounded-md"></div>
             </GlassCard>
           ))}
         </div>
@@ -126,7 +128,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className={`text-xl font-semibold ${labelText}`}>Engagement Score</h2>
           <div className="flex items-center gap-2">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center font-bold" style={{ color: 'white' }}>
               {userData?.engagement_score || 0}
             </div>
           </div>
@@ -224,7 +226,7 @@ export default function DashboardPage() {
           </div>
 
           {quotaData?.analytics.upgrade_recommended && (
-            <div className="mt-4 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+            <div className="mt-4 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-md border border-purple-500/20">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">⚡</span>
                 <span className={`font-medium ${labelText}`}>Upgrade Recommended</span>
@@ -265,7 +267,7 @@ export default function DashboardPage() {
               };
 
               return (
-                <div key={feature.feature} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                <div key={feature.feature} className="flex items-center justify-between p-3 rounded-md bg-white/5">
                   <div className="flex items-center gap-3">
                     <span className="text-lg">{featureIcons[feature.feature] || '📊'}</span>
                     <span className={`font-medium ${labelText}`}>
@@ -289,7 +291,7 @@ export default function DashboardPage() {
           </div>
 
           {userData?.user_type && (
-            <div className="mt-4 p-3 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-lg border border-emerald-500/20">
+            <div className="mt-4 p-3 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-md border border-emerald-500/20">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🎯</span>
                 <span className={`font-medium ${labelText}`}>User Type: </span>
@@ -346,7 +348,7 @@ export default function DashboardPage() {
           ].map((achievement) => (
             <div
               key={achievement.name}
-              className={`p-4 rounded-lg border transition-all ${
+              className={`p-4 rounded-md border transition-all ${
                 achievement.achieved
                   ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30'
                   : 'bg-white/5 border-white/10'

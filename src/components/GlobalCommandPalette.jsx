@@ -57,13 +57,13 @@ export default function GlobalCommandPalette({ onCommand }) {
 
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-900/50 backdrop-blur-xl">
-      <div className="mt-24 w-full max-w-xl rounded-3xl border border-white/10 bg-slate-950/70 p-6 shadow-[0_30px_65px_rgba(15,23,42,0.65)]">
+      <div className="mt-24 w-full max-w-xl rounded-lg border border-white/10 bg-slate-950/70 p-6 shadow-[0_30px_65px_rgba(15,23,42,0.65)]">
         <input
           autoFocus
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search destinations and commands"
-          className="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white/90 focus:outline-none focus:ring-2 focus:ring-sky-300/60"
+          className="w-full rounded-md border border-white/15 bg-white/10 px-4 py-3 text-sm text-white/90 focus:outline-none focus:ring-2 focus:ring-sky-300/60"
         />
         <div className="mt-4 space-y-2">
           {filtered.length === 0 ? (

@@ -65,7 +65,7 @@ export default function WorkspacePage() {
   }, [items]);
 
   const editorInputClasses = [
-    'min-h-[160px] w-full rounded-2xl border px-4 py-3 text-sm shadow-inner focus:outline-none focus:ring-2',
+    'min-h-[160px] w-full rounded-md border px-4 py-3 text-sm shadow-inner focus:outline-none focus:ring-2',
     isDark
       ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
       : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -263,7 +263,7 @@ export default function WorkspacePage() {
                     </p>
                   )}
                   {isScript && isExpanded && (
-                    <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
+                    <div className="space-y-3 rounded-md border border-white/10 bg-white/5 p-4 text-sm">
                       {isEditing ? (
                         <>
                           <textarea

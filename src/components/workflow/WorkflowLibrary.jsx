@@ -32,14 +32,14 @@ function WorkflowLibrary({ workflows, activeId, onSelect, onDelete, onDeleteAll 
             return (
               <div
                 key={workflow.id}
-                className={`group relative rounded-2xl ${
+                className={`group relative rounded-md ${
                   activeId === workflow.id ? 'ring-2 ring-sky-300/60 bg-white/15' : ''
                 }`}
               >
                 <button
                   type="button"
                   onClick={() => onSelect?.(workflow.id)}
-                  className={`liquid-interactive flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm ${
+                  className={`liquid-interactive flex w-full items-center justify-between rounded-md px-4 py-3 text-left text-sm ${
                     activeId === workflow.id ? 'bg-transparent' : ''
                   }`}
                 >

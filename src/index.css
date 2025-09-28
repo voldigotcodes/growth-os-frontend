@@ -1,9 +1,9 @@
+/* Import Liquid Glass Design System */
+@import './styles/liquidGlass.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import Liquid Glass Design System */
-@import './styles/glass.css';
 
 body {
   @apply min-h-screen font-sans antialiased;

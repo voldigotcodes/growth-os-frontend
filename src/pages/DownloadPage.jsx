@@ -187,7 +187,7 @@ export default function DownloadPage() {
                 <input
                   type="url"
                   className={[
-                    'w-full rounded-2xl border px-5 py-4 text-sm shadow-inner focus:outline-none focus:ring-2',
+                    'w-full rounded-md border px-5 py-4 text-sm shadow-inner focus:outline-none focus:ring-2',
                     isDark
                       ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                       : 'border-slate-200/70 bg-white/85 text-slate-600 focus:border-sky-300 focus:ring-sky-200',
@@ -238,7 +238,7 @@ export default function DownloadPage() {
                 </button>
               </div>
               {resolvedFileUrl && (
-                <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
+                <div className="flex flex-col gap-3 rounded-md border border-white/10 bg-white/5 p-4 text-sm">
                   <p className="text-xs uppercase tracking-[0.3em] theme-text-muted">Latest Download</p>
                   <p className="theme-text-primary">{lastTitle || 'Untitled download'}</p>
                   <button
@@ -256,7 +256,7 @@ export default function DownloadPage() {
                     <input
                       type="text"
                       className={[
-                        'w-full rounded-2xl border px-4 py-2 text-xs focus:outline-none focus:ring-2',
+                        'w-full rounded-md border px-4 py-2 text-xs focus:outline-none focus:ring-2',
                         isDark
                           ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                           : 'border-slate-200/70 bg-white/85 text-slate-600 focus:border-sky-300 focus:ring-sky-200',
@@ -369,7 +369,7 @@ export default function DownloadPage() {
                   return (
                     <div
                       key={entry.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-white/10 bg-white/5 px-4 py-3"
                     >
                       <div>
                         <p className="theme-text-primary">{name}</p>

@@ -1,0 +1,74 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Liquid Glass gradient -->
+    <linearGradient id="liquidGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(244, 114, 182, 0.8)" />
+      <stop offset="50%" stop-color="rgba(99, 102, 241, 0.9)" />
+      <stop offset="100%" stop-color="rgba(77, 184, 255, 0.8)" />
+    </linearGradient>
+
+    <!-- Inner glow -->
+    <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.6)" />
+      <stop offset="70%" stop-color="rgba(255, 255, 255, 0.2)" />
+      <stop offset="100%" stop-color="transparent" />
+    </radialGradient>
+
+    <!-- Glass filter -->
+    <filter id="glassBlur">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Outer ring -->
+  <circle
+    cx="32"
+    cy="32"
+    r="28"
+    fill="none"
+    stroke="rgba(255, 255, 255, 0.15)"
+    stroke-width="1"
+    filter="url(#glassBlur)"
+  />
+
+  <!-- Main glass circle -->
+  <circle
+    cx="32"
+    cy="32"
+    r="22"
+    fill="url(#liquidGradient)"
+    opacity="0.6"
+  />
+
+  <!-- Inner highlight -->
+  <circle
+    cx="32"
+    cy="32"
+    r="14"
+    fill="url(#innerGlow)"
+    opacity="0.8"
+  />
+
+  <!-- Growth symbol - upward arrow -->
+  <g transform="translate(32, 32)" fill="rgba(255, 255, 255, 0.9)">
+    <path d="M0,-8 L-3,-5 L-1,-5 L-1,2 L1,2 L1,-5 L3,-5 Z" />
+
+    <!-- Chart bars representing growth -->
+    <g transform="translate(0, 6)" opacity="0.7">
+      <rect x="-6" y="0" width="2" height="3" />
+      <rect x="-3" y="-1" width="2" height="4" />
+      <rect x="1" y="-2" width="2" height="5" />
+      <rect x="4" y="0" width="2" height="3" />
+    </g>
+  </g>
+
+  <!-- Glass reflection -->
+  <ellipse
+    cx="32"
+    cy="20"
+    rx="16"
+    ry="6"
+    fill="rgba(255, 255, 255, 0.2)"
+    opacity="0.6"
+  />
+</svg>

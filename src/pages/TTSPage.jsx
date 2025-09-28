@@ -344,7 +344,7 @@ const accentSky = isDark
               <span>Script Input</span>
               <textarea
                 className={[
-                  'min-h-[220px] w-full resize-y rounded-2xl border px-5 py-4 text-base shadow-inner focus:outline-none focus:ring-2',
+                  'min-h-[220px] w-full resize-y rounded-md border px-5 py-4 text-base shadow-inner focus:outline-none focus:ring-2',
                   isDark
                     ? 'border-white/10 bg-slate-900/40 text-white/90 focus:border-white/30 focus:ring-white/20'
                     : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -392,7 +392,7 @@ const accentSky = isDark
           >
             <div
               className={[
-                'flex items-center gap-4 rounded-2xl border p-5 transition-colors duration-300',
+                'flex items-center gap-4 rounded-md border p-5 transition-colors duration-300',
                 isDark
                   ? 'border-white/10 bg-slate-900/40'
                   : 'border-slate-200/70 bg-white/85 shadow-[0_20px_45px_rgba(148,163,184,0.2)]',
@@ -401,7 +401,7 @@ const accentSky = isDark
               <button
                 type="button"
                 className={[
-                  'liquid-button h-12 w-12 rounded-2xl border text-lg px-0',
+                  'liquid-button h-12 w-12 rounded-md border text-lg px-0',
                   isDark
                     ? 'border-white/15 text-white hover:ring-white/40'
                     : 'border-slate-200/70 text-slate-700 hover:ring-slate-300/60',
@@ -472,7 +472,7 @@ const accentSky = isDark
                 <span className="theme-text-muted">Workspace Title</span>
                 <input
                   className={[
-                    'rounded-2xl border px-4 py-3 focus:outline-none focus:ring-2',
+                    'rounded-md border px-4 py-3 focus:outline-none focus:ring-2',
                     isDark
                       ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                       : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -485,7 +485,7 @@ const accentSky = isDark
                 <span className="theme-text-muted">Workspace Tags (comma separated)</span>
                     <input
                       className={[
-                        'rounded-2xl border px-4 py-3 focus:outline-none focus:ring-2',
+                        'rounded-md border px-4 py-3 focus:outline-none focus:ring-2',
                         isDark
                           ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                           : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -518,7 +518,7 @@ const accentSky = isDark
                   <span>Voice Provider</span>
                   <select
                     className={[
-                      'w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                      'w-full rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                       isDark
                         ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                         : 'border-slate-200/70 bg-white/85 text-slate-600 focus:border-sky-300 focus:ring-sky-200',
@@ -545,7 +545,7 @@ const accentSky = isDark
                   <span>Voice Model</span>
                   <select
                     className={[
-                      'w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                      'w-full rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                       isDark
                         ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                         : 'border-slate-200/70 bg-white/85 text-slate-600 focus:border-sky-300 focus:ring-sky-200',
@@ -564,23 +564,23 @@ const accentSky = isDark
             )}
 
             <div className="grid gap-3 text-sm">
-              <div className="rounded-2xl border border-white/5 bg-white/5 px-4 py-3">
+              <div className="rounded-md border border-white/5 bg-white/5 px-4 py-3">
                 <p className="text-sm font-medium theme-text-primary">Warmth</p>
                 <p className="mt-1 text-xs theme-text-muted">{voiceMeta.warmth}</p>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-white/5 px-4 py-3">
+              <div className="rounded-md border border-white/5 bg-white/5 px-4 py-3">
                 <p className="text-sm font-medium theme-text-primary">Cadence</p>
                 <p className="mt-1 text-xs theme-text-muted">{voiceMeta.cadence}</p>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-white/5 px-4 py-3">
+              <div className="rounded-md border border-white/5 bg-white/5 px-4 py-3">
                 <p className="text-sm font-medium theme-text-primary">Energy</p>
                 <p className="mt-1 text-xs theme-text-muted">{voiceMeta.energy}</p>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-white/5 px-4 py-3">
+              <div className="rounded-md border border-white/5 bg-white/5 px-4 py-3">
                 <p className="text-sm font-medium theme-text-primary">Tone</p>
                 <p className="mt-1 text-xs theme-text-muted">{voiceMeta.tone}</p>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-white/5 px-4 py-3">
+              <div className="rounded-md border border-white/5 bg-white/5 px-4 py-3">
                 <p className="text-sm font-medium theme-text-primary">Voice Character</p>
                 <p className="mt-1 text-xs theme-text-muted">{voiceMeta.gender}</p>
               </div>

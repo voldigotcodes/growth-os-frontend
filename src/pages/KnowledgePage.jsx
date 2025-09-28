@@ -514,7 +514,7 @@ export default function KnowledgePage() {
         >
           <textarea
             className={[
-              'min-h-[260px] w-full resize-y rounded-3xl border px-5 py-4 text-sm shadow-inner focus:outline-none focus:ring-2 transition',
+              'min-h-[260px] w-full resize-y rounded-md border px-5 py-4 text-sm shadow-inner focus:outline-none focus:ring-2 transition',
               isDark
                 ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                 : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -550,7 +550,7 @@ export default function KnowledgePage() {
             <span className="theme-text-muted">Brand Name</span>
             <input
               className={[
-                'rounded-2xl border px-4 py-3 focus:outline-none focus:ring-2',
+                'rounded-md border px-4 py-3 focus:outline-none focus:ring-2',
                 isDark
                   ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                   : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -563,7 +563,7 @@ export default function KnowledgePage() {
             <span className="theme-text-muted">Brand Positioning</span>
             <input
               className={[
-                'rounded-2xl border px-4 py-3 focus:outline-none focus:ring-2',
+                'rounded-md border px-4 py-3 focus:outline-none focus:ring-2',
                 isDark
                   ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                   : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -577,7 +577,7 @@ export default function KnowledgePage() {
           <span className="theme-text-muted">Role Mission</span>
           <textarea
             className={[
-              'min-h-[90px] rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+              'min-h-[90px] rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
               isDark
                 ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                 : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -594,7 +594,7 @@ export default function KnowledgePage() {
             <span className="theme-text-muted">Brand Voice (one per line)</span>
             <textarea
               className={[
-                'min-h-[140px] rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                'min-h-[140px] rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                 isDark
                   ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                   : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -607,7 +607,7 @@ export default function KnowledgePage() {
             <span className="theme-text-muted">Target Audience (one per line)</span>
             <textarea
               className={[
-                'min-h-[140px] rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                'min-h-[140px] rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                 isDark
                   ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                   : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -625,7 +625,7 @@ export default function KnowledgePage() {
             <span className="theme-text-muted">Offer Name</span>
             <input
               className={[
-                'rounded-2xl border px-4 py-3 focus:outline-none focus:ring-2',
+                'rounded-md border px-4 py-3 focus:outline-none focus:ring-2',
                 isDark
                   ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                   : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -638,7 +638,7 @@ export default function KnowledgePage() {
             <span className="theme-text-muted">Offer Format / Type</span>
             <input
               className={[
-                'rounded-2xl border px-4 py-3 focus:outline-none focus:ring-2',
+                'rounded-md border px-4 py-3 focus:outline-none focus:ring-2',
                 isDark
                   ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                   : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -653,7 +653,7 @@ export default function KnowledgePage() {
             <span className="theme-text-muted">Key Features / Proof Drivers (one per line)</span>
             <textarea
               className={[
-                'min-h-[120px] rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                'min-h-[120px] rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                 isDark
                   ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                   : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -666,7 +666,7 @@ export default function KnowledgePage() {
             <span className="theme-text-muted">Core Benefits (one per line)</span>
             <textarea
               className={[
-                'min-h-[120px] rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                'min-h-[120px] rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                 isDark
                   ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                   : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -697,7 +697,7 @@ export default function KnowledgePage() {
             <span className="theme-text-muted">Trust Builders (one per line)</span>
             <textarea
               className={[
-                'min-h-[120px] rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                'min-h-[120px] rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                 isDark
                   ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                   : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -710,7 +710,7 @@ export default function KnowledgePage() {
             <span className="theme-text-muted">Trust Proof Examples (one per line)</span>
             <textarea
               className={[
-                'min-h-[120px] rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                'min-h-[120px] rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                 isDark
                   ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                   : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -724,7 +724,7 @@ export default function KnowledgePage() {
           <span className="theme-text-muted">Angles to Weave In (one per line)</span>
           <textarea
             className={[
-              'min-h-[120px] rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+              'min-h-[120px] rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
               isDark
                 ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                 : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -737,7 +737,7 @@ export default function KnowledgePage() {
           <span className="theme-text-muted">Forbidden (one per line)</span>
           <textarea
             className={[
-              'min-h-[120px] rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+              'min-h-[120px] rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
               isDark
                 ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                 : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -766,7 +766,7 @@ export default function KnowledgePage() {
           <span className="theme-text-muted">CTA Examples (one per line)</span>
           <textarea
             className={[
-              'min-h-[120px] rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+              'min-h-[120px] rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
               isDark
                 ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                 : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -783,7 +783,7 @@ export default function KnowledgePage() {
             <span className="theme-text-muted">UGC-style Script Notes</span>
             <textarea
               className={[
-                'min-h-[120px] rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                'min-h-[120px] rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                 isDark
                   ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                   : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',
@@ -796,7 +796,7 @@ export default function KnowledgePage() {
             <span className="theme-text-muted">AI Voiceover Script Notes</span>
             <textarea
               className={[
-                'min-h-[120px] rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2',
+                'min-h-[120px] rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
                 isDark
                   ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
                   : 'border-slate-200/70 bg-white/85 text-slate-700 focus:border-sky-300 focus:ring-sky-200',

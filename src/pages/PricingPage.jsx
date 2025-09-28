@@ -127,7 +127,7 @@ export default function PricingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
             <GlassCard key={i} className="animate-pulse">
-              <div className="h-96 bg-white/5 rounded-lg"></div>
+              <div className="h-96 bg-white/5 rounded-md"></div>
             </GlassCard>
           ))}
         </div>
@@ -248,18 +248,18 @@ export default function PricingPage() {
               {/* Enhanced CTA Button with Liquid Glass styling */}
               <div className="mt-auto">
                 {isCurrentTier ? (
-                  <div className={`w-full py-3 text-center font-medium rounded-xl ${isDark ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-700/50' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
+                  <div className={`w-full py-3 text-center font-medium rounded-md ${isDark ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-700/50' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
                     Current Plan
                   </div>
                 ) : tier.tier === 'free' ? (
-                  <div className={`w-full py-3 text-center font-medium rounded-xl ${isDark ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                  <div className={`w-full py-3 text-center font-medium rounded-md ${isDark ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
                     Free Forever
                   </div>
                 ) : (
                   <button
                     onClick={() => handleUpgrade(tier.tier)}
                     disabled={isUpgradingThis}
-                    className={`w-full px-6 py-3 text-base font-medium rounded-xl transition-colors ${
+                    className={`w-full px-6 py-3 text-base font-medium rounded-md transition-colors ${
                       tier.popular
                         ? isDark
                           ? 'bg-fuchsia-600 hover:bg-fuchsia-700 text-white'

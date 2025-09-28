@@ -9,6 +9,10 @@ export const ThemeContext = createContext({
   },
   setBackgroundImage: () => {},
   resetBackgroundImage: () => {},
+  // New predefined theme support
+  selectedThemeId: 'default',
+  setSelectedTheme: () => {},
+  getCurrentBackgroundStyle: () => null,
 });
 
 export function useTheme() {
