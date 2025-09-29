@@ -11,6 +11,7 @@ import { FeatureFlagProvider } from './context/FeatureFlagContext.jsx';
 import { StatusProvider } from './context/StatusContext.jsx';
 import { ProfileProvider } from './context/ProfileContext.jsx';
 import { getThemeById, getDefaultTheme } from './config/themes.js';
+import { AuthProvider } from './firebase/AuthContext.jsx';
 import GlobalCommandPalette from './components/GlobalCommandPalette.jsx';
 import ShortcutHints from './components/ShortcutHints.jsx';
 
@@ -23,6 +24,7 @@ const KnowledgePage = lazy(() => import('./pages/KnowledgePage.jsx'));
 const WorkflowPage = lazy(() => import('./pages/WorkflowPage.jsx'));
 const PricingPage = lazy(() => import('./pages/PricingPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
+const AuthDemo = lazy(() => import('./pages/AuthDemo.jsx'));
 
 function Shell() {
   const [theme, setTheme] = useState('dark');
@@ -226,6 +228,7 @@ function Shell() {
                 <Route path="/workflows" element={<WorkflowPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/auth-demo" element={<AuthDemo />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
               </div>
@@ -244,12 +247,14 @@ function Shell() {
 
 export default function App() {
   return (
-    <ProfileProvider>
-      <FeatureFlagProvider>
-        <StatusProvider>
-          <Shell />
-        </StatusProvider>
-      </FeatureFlagProvider>
-    </ProfileProvider>
+    <AuthProvider>
+      <ProfileProvider>
+        <FeatureFlagProvider>
+          <StatusProvider>
+            <Shell />
+          </StatusProvider>
+        </FeatureFlagProvider>
+      </ProfileProvider>
+    </AuthProvider>
   );
 }
