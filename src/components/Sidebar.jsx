@@ -39,7 +39,7 @@ const futureFeatures = [
 ];
 
 export default function Sidebar() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const { preferences } = usePreferences();
   const { displayName, companyName } = useProfile();
   const { primaryText, secondaryText, mutedText } = useDynamicTextColor();
@@ -64,29 +64,6 @@ export default function Sidebar() {
           </p>
         </div>
 
-        {/* Theme toggle */}
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className={`flex items-center gap-3 px-4 py-3 text-left text-sm font-medium w-full rounded-xl transition-colors ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}
-        >
-          <div className={`flex h-9 w-9 items-center justify-center text-lg rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-            {isDark ? '🌤️' : '🌙'}
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold theme-text-primary">
-              {isDark ? 'Activate Light Mode' : 'Return to Midnight Mode'}
-            </p>
-            {preferences.interface.showDescriptions && (
-              <p className="text-xs theme-text-muted tracking-wide">
-                {isDark ? 'Infuse the glass with aurora hues.' : 'Slide back into the midnight studio.'}
-              </p>
-            )}
-          </div>
-          <span className="text-xs uppercase tracking-[0.2em] theme-text-muted">
-            {isDark ? 'Light' : 'Dark'}
-          </span>
-        </button>
       </div>
 
       {/* Scrollable Content Section */}

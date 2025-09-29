@@ -27,7 +27,7 @@ export default function DashboardPage() {
         setIsLoading(true);
 
         // Fetch user analytics
-        const analyticsResponse = await fetch('http://localhost:8000/analytics/user', {
+        const analyticsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/analytics/user`, {
           method: 'GET',
           headers: {
             'X-User-ID': localStorage.getItem('growth-os-user-id') || `user_${Date.now()}`,
@@ -41,7 +41,7 @@ export default function DashboardPage() {
         }
 
         // Fetch quota data
-        const quotaResponse = await fetch('http://localhost:8000/credits/quota', {
+        const quotaResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/credits/quota`, {
           method: 'GET',
           headers: {
             'X-User-ID': localStorage.getItem('growth-os-user-id') || `user_${Date.now()}`,

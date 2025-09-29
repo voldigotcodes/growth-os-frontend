@@ -9,8 +9,8 @@ export default defineConfig({
       overlay: false
     },
     fs: {
-      strict: false,
-      allow: ['..']
+      strict: true,
+      allow: ['.']
     },
     middlewareMode: false
   },
@@ -19,7 +19,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
-  base: './',
+  base: '/',
   optimizeDeps: {
     exclude: []
   }

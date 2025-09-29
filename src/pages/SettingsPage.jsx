@@ -5,14 +5,22 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { useToast } from '../components/ToastContext.jsx';
 import { usePreferences } from '../context/PreferencesContext.jsx';
 import { useProfile } from '../context/ProfileContext.jsx';
-import { predefinedThemes, themeCategories } from '../config/themes.js';
+import { predefinedThemes, themeCategories, getThemeAccentColors } from '../config/themes.js';
+import { useAuth, usePlan } from '../firebase/AuthContext.jsx';
+import { LogoutButton } from '../firebase/index.js';
+import { useNavigate } from 'react-router-dom';
 
 export default function SettingsPage() {
-  const { theme, toggleTheme, backgroundImages, setBackgroundImage, resetBackgroundImage, selectedThemeId, setSelectedTheme } = useTheme();
+  const { theme, backgroundImages, setBackgroundImage, resetBackgroundImage, selectedThemeId, setSelectedTheme } = useTheme();
   const { addToast } = useToast();
   const { preferences, updatePreference, resetPreferences } = usePreferences();
   const { profile, updateProfile, updateMultipleFields, resetProfile } = useProfile();
+  const { currentUser, userProfile } = useAuth();
+  const plan = usePlan();
+  const navigate = useNavigate();
   const isDark = theme === 'dark';
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
 
   // Use standard theme text classes for proper contrast
@@ -30,6 +38,34 @@ export default function SettingsPage() {
   const handleSaveSettings = () => {
     // Profile is auto-saved by context, preferences are auto-saved by context
     addToast('Settings saved successfully!', 'success');
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      // For now, just show a warning as actual account deletion would require Firebase admin
+      addToast('Account deletion requested. Please contact support to complete this process.', 'warning');
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      addToast('Failed to delete account. Please try again.', 'error');
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    try {
+      // This would integrate with RevenueCat to cancel subscription
+      addToast('Subscription cancellation requested. You will retain access until the end of your billing period.', 'success');
+    } catch (error) {
+      addToast('Failed to cancel subscription. Please try again.', 'error');
+    }
+  };
+
+  const handleLogoutSuccess = () => {
+    addToast('Successfully signed out!', 'success');
+    navigate('/auth');
+  };
+
+  const handleLogoutError = (error) => {
+    addToast(`Logout failed: ${error}`, 'error');
   };
 
   const handleBackgroundImageUpload = (mode, event) => {
@@ -162,33 +198,6 @@ export default function SettingsPage() {
 
           <GlassCard title="Interface Preferences" subtitle="Customize the look and feel of your workspace.">
             <div className="space-y-4">
-              <div>
-                <span className="mb-3 block text-xs uppercase tracking-[0.3em] theme-text-muted">
-                  Theme
-                </span>
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className={[
-                    'flex w-full items-center gap-3 rounded-md border p-4 text-left transition-all',
-                    isDark
-                      ? 'border-white/15 bg-white/5 hover:bg-white/10'
-                      : 'border-slate-200/70 bg-white/80 hover:bg-white/90',
-                  ].join(' ')}
-                >
-                  <span className="text-2xl">{isDark ? '🌙' : '🌤️'}</span>
-                  <div className="flex-1">
-                    <p className={`font-medium ${labelText}`}>
-                      {isDark ? 'Dark Mode' : 'Light Mode'}
-                    </p>
-                    <p className={`text-xs ${subtleText}`}>
-                      {isDark ? 'Current theme: Midnight glass' : 'Current theme: Aurora glass'}
-                    </p>
-                  </div>
-                  <span className={`text-xs ${subtleText}`}>Switch</span>
-                </button>
-              </div>
-
               {/* Background Theme Settings */}
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -196,7 +205,7 @@ export default function SettingsPage() {
                     Background Theme
                   </span>
                   <p className={`text-sm ${subtleText}`}>
-                    Choose a predefined theme that applies to both light and dark modes
+                    Choose a predefined theme to customize your workspace background
                   </p>
                 </div>
 
@@ -204,6 +213,7 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {predefinedThemes.map((themeOption) => {
                     const isSelected = selectedThemeId === themeOption.id;
+                    const accentColors = getThemeAccentColors(selectedThemeId);
                     return (
                       <button
                         key={themeOption.id}
@@ -215,12 +225,8 @@ export default function SettingsPage() {
                         className={[
                           'group relative flex flex-col gap-2 rounded-md border p-3 text-left transition-all',
                           isSelected
-                            ? isDark
-                              ? 'border-sky-400/60 bg-sky-500/10 ring-2 ring-sky-400/40'
-                              : 'border-sky-500/60 bg-sky-50 ring-2 ring-sky-500/40'
-                            : isDark
-                              ? 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
-                              : 'border-slate-200 bg-white/50 hover:bg-slate-50 hover:border-slate-300',
+                            ? `border-${accentColors.border} bg-${accentColors.bg} ring-2 ring-${accentColors.ring}`
+                            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20',
                         ].join(' ')}
                       >
                         {/* Theme Preview */}
@@ -242,10 +248,10 @@ export default function SettingsPage() {
 
                         {/* Theme Info */}
                         <div className="space-y-1">
-                          <h4 className={`text-sm font-medium ${isSelected ? (isDark ? 'text-sky-200' : 'text-sky-700') : 'theme-text-primary'}`}>
+                          <h4 className={`text-sm font-medium ${isSelected ? `text-${accentColors.text}` : 'theme-text-primary'}`}>
                             {themeOption.name}
                           </h4>
-                          <p className={`text-xs ${isSelected ? (isDark ? 'text-sky-300/80' : 'text-sky-600/80') : 'theme-text-muted'}`}>
+                          <p className={`text-xs ${isSelected ? `text-${accentColors.textMuted}` : 'theme-text-muted'}`}>
                             {themeOption.description}
                           </p>
                         </div>
@@ -447,6 +453,99 @@ export default function SettingsPage() {
               >
                 Reset to Defaults
               </button>
+            </div>
+          </GlassCard>
+        </div>
+      </div>
+
+      {/* Account Management Section */}
+      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+        {/* Account Information */}
+        <div className="space-y-6">
+          <GlassCard title="Account Information" subtitle="Your account details and authentication status.">
+            <div className="space-y-4">
+              <div className="glass-panel p-4 bg-blue-500/10 border border-blue-500/20">
+                <div className="text-sm space-y-2">
+                  <p><strong className="theme-text-primary">Email:</strong> <span className="theme-text-muted">{currentUser?.email}</span></p>
+                  <p><strong className="theme-text-primary">UID:</strong> <span className="theme-text-muted font-mono text-xs">{currentUser?.uid}</span></p>
+                  <p><strong className="theme-text-primary">Plan:</strong> <span className={`capitalize font-medium ${plan === 'pro' ? 'text-emerald-400' : 'text-blue-400'}`}>{plan}</span></p>
+                  {userProfile?.createdAt && (
+                    <p><strong className="theme-text-primary">Member since:</strong> <span className="theme-text-muted">{userProfile.createdAt.toDate?.()?.toLocaleDateString() || 'Recently'}</span></p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <LogoutButton
+                  onSuccess={handleLogoutSuccess}
+                  onError={handleLogoutError}
+                  variant="secondary"
+                  size="md"
+                  className="w-full"
+                >
+                  Sign Out
+                </LogoutButton>
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* Subscription & Account Actions */}
+        <div className="space-y-6">
+          <GlassCard title="Subscription & Account" subtitle="Manage your subscription and account settings.">
+            <div className="space-y-4">
+              {plan === 'pro' && (
+                <div className="glass-panel p-4 bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="text-sm space-y-2">
+                    <p className="text-emerald-300 font-medium">✨ Pro Plan Active</p>
+                    <p className="theme-text-muted">You have access to all premium features.</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {plan === 'pro' && (
+                  <button
+                    type="button"
+                    className="liquid-button w-full text-sm border-orange-400/60 bg-orange-500/15 text-orange-200 hover:ring-orange-300/50"
+                    onClick={handleCancelSubscription}
+                  >
+                    Cancel Subscription
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="liquid-button w-full text-sm border-red-400/60 bg-red-500/15 text-red-200 hover:ring-red-300/50"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  Delete Account
+                </button>
+              </div>
+
+              {showDeleteConfirm && (
+                <div className="glass-panel p-4 bg-red-500/10 border border-red-500/20">
+                  <p className="text-sm text-red-300 mb-3">
+                    ⚠️ This action cannot be undone. All your data will be permanently deleted.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="liquid-button flex-1 text-sm border-red-400/60 bg-red-500/20 text-red-200 hover:ring-red-300/50"
+                      onClick={handleDeleteAccount}
+                    >
+                      Confirm Delete
+                    </button>
+                    <button
+                      type="button"
+                      className="liquid-button flex-1 text-sm border-gray-400/60 bg-gray-500/15 text-gray-200 hover:ring-gray-300/50"
+                      onClick={() => setShowDeleteConfirm(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </GlassCard>
         </div>

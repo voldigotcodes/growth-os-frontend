@@ -14,6 +14,7 @@ import { getThemeById, getDefaultTheme } from './config/themes.js';
 import { AuthProvider } from './firebase/AuthContext.jsx';
 import GlobalCommandPalette from './components/GlobalCommandPalette.jsx';
 import ShortcutHints from './components/ShortcutHints.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
 const TranscribePage = lazy(() => import('./pages/TranscribePage.jsx'));
@@ -25,14 +26,33 @@ const WorkflowPage = lazy(() => import('./pages/WorkflowPage.jsx'));
 const PricingPage = lazy(() => import('./pages/PricingPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 const AuthDemo = lazy(() => import('./pages/AuthDemo.jsx'));
+const AuthPage = lazy(() => import('./pages/AuthPage.jsx'));
+const SubscriptionsPage = lazy(() => import('./pages/SubscriptionsPage.jsx'));
 
 function Shell() {
   const [theme, setTheme] = useState('dark');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [backgroundImages, setBackgroundImages] = useState(() => {
-    // Load from localStorage if available
+    // Clear any stored gradient data from localStorage to prevent URL errors
     const saved = localStorage.getItem('growth-os-backgrounds');
-    return saved ? JSON.parse(saved) : { light: null, dark: null };
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Check if stored values contain gradients (which should not be stored)
+        const hasGradients = Object.values(parsed || {}).some(val =>
+          val && typeof val === 'string' && val.includes('linear-gradient')
+        );
+        if (hasGradients) {
+          localStorage.removeItem('growth-os-backgrounds');
+          return { light: null, dark: null };
+        }
+        return parsed;
+      } catch {
+        localStorage.removeItem('growth-os-backgrounds');
+        return { light: null, dark: null };
+      }
+    }
+    return { light: null, dark: null };
   });
   const [selectedThemeId, setSelectedThemeId] = useState(() => {
     // Load selected theme from localStorage
@@ -45,7 +65,7 @@ function Shell() {
   const location = useLocation();
   const { primaryText } = useDynamicTextColor();
 
-  const routes = ['/dashboard', '/download', '/transcribe', '/tts', '/workflows', '/workspace', '/knowledge', '/settings', '/pricing'];
+  const routes = ['/dashboard', '/download', '/transcribe', '/tts', '/workflows', '/workspace', '/knowledge', '/subscriptions', '/settings', '/pricing'];
   const currentIndex = routes.indexOf(location.pathname);
 
   const swipeGestureRef = useSwipeGestures({
@@ -66,22 +86,33 @@ function Shell() {
     body.classList.remove('theme-dark', 'theme-light');
     body.classList.add(`theme-${theme}`);
 
-    // Apply predefined theme background or custom image
+    // Apply predefined theme background (dark mode only)
     const selectedTheme = getThemeById(selectedThemeId);
     let currentBg = null;
 
-    if (selectedTheme && selectedTheme[theme]) {
-      // Use predefined theme gradient
-      currentBg = selectedTheme[theme];
-      body.style.backgroundImage = currentBg;
-      body.style.backgroundSize = 'cover';
-      body.style.backgroundPosition = 'center';
-      body.style.backgroundRepeat = 'no-repeat';
-      body.style.backgroundAttachment = 'fixed';
-    } else if (backgroundImages[theme]) {
+    if (selectedTheme && selectedTheme.dark) {
+      // Use predefined theme gradient - ensure it's properly formatted CSS
+      currentBg = selectedTheme.dark;
+      // Only apply if it's a valid CSS gradient
+      if (currentBg && currentBg.includes('linear-gradient')) {
+        body.style.backgroundImage = currentBg;
+        body.style.backgroundSize = 'cover';
+        body.style.backgroundPosition = 'center';
+        body.style.backgroundRepeat = 'no-repeat';
+        body.style.backgroundAttachment = 'fixed';
+      } else {
+        // Reset if invalid
+        body.style.backgroundImage = '';
+      }
+    } else if (backgroundImages.dark) {
       // Fallback to custom uploaded image (for backwards compatibility)
-      currentBg = backgroundImages[theme];
-      body.style.backgroundImage = `url(${currentBg})`;
+      currentBg = backgroundImages.dark;
+      // Check if it's a URL or gradient
+      if (currentBg.includes('linear-gradient')) {
+        body.style.backgroundImage = currentBg;
+      } else {
+        body.style.backgroundImage = `url(${currentBg})`;
+      }
       body.style.backgroundSize = 'cover';
       body.style.backgroundPosition = 'center';
       body.style.backgroundRepeat = 'no-repeat';
@@ -108,23 +139,15 @@ function Shell() {
     setSelectedThemeId(themeId);
     localStorage.setItem('growth-os-selected-theme', themeId);
 
-    // Apply the theme's background to both light and dark modes
-    const selectedTheme = getThemeById(themeId);
-    if (selectedTheme) {
-      const newBackgrounds = {
-        light: selectedTheme.light,
-        dark: selectedTheme.dark
-      };
-      setBackgroundImages(newBackgrounds);
-      localStorage.setItem('growth-os-backgrounds', JSON.stringify(newBackgrounds));
-    }
+    // Don't store gradient strings in backgroundImages - they should only contain actual image URLs
+    // The gradient application is handled directly in the useEffect
   };
 
   const getCurrentBackgroundStyle = () => {
     const selectedTheme = getThemeById(selectedThemeId);
     if (!selectedTheme) return null;
 
-    const currentBackground = selectedTheme[theme];
+    const currentBackground = selectedTheme.dark;
     return currentBackground ? { backgroundImage: currentBackground } : null;
   };
 
@@ -137,7 +160,7 @@ function Shell() {
   const contextValue = useMemo(
     () => ({
       theme,
-      toggleTheme: () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark')),
+      toggleTheme: () => {}, // Light mode removed - always dark mode
       backgroundImages,
       setBackgroundImage,
       resetBackgroundImage,
@@ -165,14 +188,7 @@ function Shell() {
           primaryText,
         ].join(' ')}
       >
-        <div
-          className={[
-            'pointer-events-none absolute inset-0 transition-opacity duration-500 ease-out',
-            isDark
-              ? 'bg-gradient-to-br from-white/5 via-transparent to-purple-500/10'
-              : 'bg-gradient-to-br from-emerald-100/40 via-white/60 to-pink-100/50',
-          ].join(' ')}
-        />
+        <div className="pointer-events-none absolute inset-0 transition-opacity duration-500 ease-out bg-gradient-to-br from-white/5 via-transparent to-purple-500/10" />
         {/* Left panel with stronger background blur */}
         <div className="relative w-72 shrink-0 h-screen">
           {/* Background overlay for left panel - more blurred - covers full height */}
@@ -181,7 +197,7 @@ function Shell() {
             style={{
               width: '18rem', // 72 * 0.25rem = 18rem (sidebar width)
               backdropFilter: 'blur(20px) saturate(150%)',
-              backgroundColor: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.85)'
+              backgroundColor: 'rgba(15, 23, 42, 0.85)'
             }}
           />
           <div className="relative z-10">
@@ -197,7 +213,7 @@ function Shell() {
               left: '18rem', // 72 * 0.25rem = 18rem (sidebar width)
               right: '0',
               backdropFilter: 'blur(8px) saturate(120%)',
-              backgroundColor: isDark ? 'rgba(15, 23, 42, 0.70)' : 'rgba(255, 255, 255, 0.70)'
+              backgroundColor: 'rgba(15, 23, 42, 0.70)'
             }}
           />
           <div className="relative z-10 h-full overflow-y-auto">
@@ -227,6 +243,7 @@ function Shell() {
                 <Route path="/knowledge" element={<KnowledgePage />} />
                 <Route path="/workflows" element={<WorkflowPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/subscriptions" element={<SubscriptionsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/auth-demo" element={<AuthDemo />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -245,13 +262,27 @@ function Shell() {
   );
 }
 
+// Main App component that handles routing between auth and protected areas
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/auth" element={<AuthPage />} />
+      <Route path="/*" element={
+        <ProtectedRoute>
+          <Shell />
+        </ProtectedRoute>
+      } />
+    </Routes>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <ProfileProvider>
         <FeatureFlagProvider>
           <StatusProvider>
-            <Shell />
+            <AppRoutes />
           </StatusProvider>
         </FeatureFlagProvider>
       </ProfileProvider>

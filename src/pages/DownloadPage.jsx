@@ -33,6 +33,7 @@ export default function DownloadPage() {
   const [historyItems, setHistoryItems] = useState([]);
   const [saveToWorkspace, setSaveToWorkspace] = useState(true);
   const [downloadingFile, setDownloadingFile] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   // Use standard theme text classes for proper contrast
   const subtleText = 'theme-text-muted';
@@ -65,21 +66,60 @@ export default function DownloadPage() {
     refreshData();
   }, []);
 
-  const downloadFileBlob = async (path, fallbackName = 'download') => {
+  const downloadFileBlob = async (path, fallbackName = 'download', showProgress = false) => {
     if (!path) return;
     setDownloadingFile(true);
+    if (showProgress) setDownloadProgress(0);
+
     try {
       const response = await fetch(`${API_BASE}${path}`);
       if (!response.ok) throw new Error('Download failed');
-      const blob = await response.blob();
-      const filename = path.split('/').pop() || fallbackName;
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
+
+      const contentLength = response.headers.get('content-length');
+      const total = contentLength ? parseInt(contentLength, 10) : 0;
+      let loaded = 0;
+
+      const reader = response.body?.getReader();
+      const chunks = [];
+
+      if (reader && total > 0 && showProgress) {
+        // Stream with progress tracking
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          chunks.push(value);
+          loaded += value.length;
+          const progress = Math.round((loaded / total) * 100);
+          setDownloadProgress(progress);
+        }
+
+        const blob = new Blob(chunks);
+        const filename = path.split('/').pop() || fallbackName;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+      } else {
+        // Fallback without progress
+        const blob = await response.blob();
+        const filename = path.split('/').pop() || fallbackName;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+      }
+
+      if (showProgress) {
+        setDownloadProgress(100);
+        setTimeout(() => setDownloadProgress(0), 2000); // Reset after 2 seconds
+      }
     } catch (error) {
       addToast('Unable to download file.', 'error');
     } finally {
@@ -102,7 +142,11 @@ export default function DownloadPage() {
       const { file_url, title } = await downloadMedia({ url: effectiveUrl, format: chosenFormat });
       setFileUrl(file_url);
       setLastTitle(title || effectiveUrl);
-      addToast('Download ready.');
+      addToast('Download complete! File saved to browser downloads.');
+
+      // Automatically download the file to browser default location
+      await downloadFileBlob(file_url, title || 'download', true);
+
       refreshData();
     } catch (error) {
       addToast(error.message || 'Could not download this link.', 'error');
@@ -237,18 +281,28 @@ export default function DownloadPage() {
                   {isDownloading && format === 'mp3' ? 'Downloading…' : 'Download MP3'}
                 </button>
               </div>
-              {resolvedFileUrl && (
+              {(resolvedFileUrl || downloadProgress > 0) && (
                 <div className="flex flex-col gap-3 rounded-md border border-white/10 bg-white/5 p-4 text-sm">
-                  <p className="text-xs uppercase tracking-[0.3em] theme-text-muted">Latest Download</p>
+                  <p className="text-xs uppercase tracking-[0.3em] theme-text-muted">
+                    {downloadProgress > 0 && downloadProgress < 100 ? 'Downloading...' : 'Latest Download'}
+                  </p>
                   <p className="theme-text-primary">{lastTitle || 'Untitled download'}</p>
-                  <button
-                    type="button"
-                    className="liquid-button text-xs"
-                    onClick={() => downloadFileBlob(fileUrl, lastTitle || 'download')}
-                    disabled={downloadingFile}
-                  >
-                    {downloadingFile ? 'Preparing…' : 'Save Downloaded File'}
-                  </button>
+
+                  {/* Download Progress Bar */}
+                  {downloadProgress > 0 && (
+                    <div className="w-full">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs theme-text-muted">Progress</span>
+                        <span className="text-xs theme-text-primary">{downloadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-white/10 rounded-full h-2">
+                        <div
+                          className="bg-emerald-500 h-2 rounded-full transition-all duration-300 ease-out"
+                          style={{ width: `${downloadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                   <div className="flex flex-col gap-2">
                     <label className="text-xs uppercase tracking-[0.3em] theme-text-muted">
                       Tags (comma separated)
