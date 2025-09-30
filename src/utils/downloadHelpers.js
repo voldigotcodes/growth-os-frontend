@@ -1,17 +1,33 @@
 /**
- * Enhanced download utilities with debugging and error handling
+ * Enhanced download utilities with Firebase Auth and Firestore logging
  * for workflow outputs
  */
 
-// Get user headers for authenticated downloads
-function getUserHeaders() {
-  const userId = localStorage.getItem('growth-os-user-id');
-  const sessionId = localStorage.getItem('growth-os-session-id');
+import { auth } from '../firebase/firebaseConfig.js';
+import { logActivity, updateOutputDownload } from '../firebase/firestoreService.js';
 
-  return {
-    'X-User-ID': userId,
-    'X-Session-ID': sessionId
-  };
+// Get user headers for authenticated downloads using Firebase Auth
+async function getAuthHeaders() {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  try {
+    const idToken = await user.getIdToken();
+    return {
+      'Authorization': `Bearer ${idToken}`,
+      'X-User-ID': user.uid,
+      'Content-Type': 'application/json'
+    };
+  } catch (error) {
+    console.error('Failed to get auth token:', error);
+    return {
+      'X-User-ID': user.uid,
+      'Content-Type': 'application/json'
+    };
+  }
 }
 
 /**
@@ -40,7 +56,14 @@ export async function downloadFile(url, filename, options = {}) {
     // Prepare headers
     const headers = {};
     if (includeAuth) {
-      Object.assign(headers, getUserHeaders());
+      try {
+        Object.assign(headers, await getAuthHeaders());
+      } catch (authError) {
+        if (debug) {
+          console.warn('Auth failed, proceeding without auth headers:', authError);
+        }
+        // Continue without auth headers for public files
+      }
     }
 
     if (debug) {
@@ -114,6 +137,28 @@ export async function downloadFile(url, filename, options = {}) {
 
       if (debug) {
         console.log('✅ Download triggered successfully');
+      }
+
+      // Log download activity to Firestore
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          await logActivity(user.uid, {
+            type: 'download',
+            action: 'complete',
+            metadata: {
+              filename: filename,
+              size: blob.size,
+              url: url,
+              contentType: blob.type
+            }
+          });
+        }
+      } catch (logError) {
+        if (debug) {
+          console.warn('Failed to log download activity:', logError);
+        }
+        // Don't fail the download if logging fails
       }
 
       return { success: true, filename: filename, size: blob.size };

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.jsx';
-import { trackEvent } from '../lib/apiClient.js';
+import { useAuth } from '../firebase/AuthContext.jsx';
+import { trackEvent } from '../lib/apiClientFirebase.js';
+import { updateUserPreferences } from '../firebase/firestoreService.js';
 import GlassCard from './GlassCard.jsx';
 
 const ONBOARDING_STEPS = [
@@ -65,6 +67,7 @@ const ONBOARDING_STEPS = [
 
 export default function OnboardingTour({ onComplete }) {
   const { theme } = useTheme();
+  const { currentUser, getPreference } = useAuth();
   const navigate = useNavigate();
   const isDark = theme === 'dark';
 
@@ -80,13 +83,15 @@ export default function OnboardingTour({ onComplete }) {
   const accentGradient = 'bg-gradient-to-r from-purple-500 to-pink-500';
 
   useEffect(() => {
-    // Check if user has completed onboarding
-    const hasCompletedOnboarding = localStorage.getItem('growth-os-onboarding-completed');
-    if (!hasCompletedOnboarding) {
-      setIsVisible(true);
-      trackEvent('onboarding_started');
+    // Check if user has completed onboarding using Firebase preferences
+    if (currentUser) {
+      const hasCompletedOnboarding = getPreference('onboardingCompleted', false);
+      if (!hasCompletedOnboarding) {
+        setIsVisible(true);
+        trackEvent('onboarding_started');
+      }
     }
-  }, []);
+  }, [currentUser, getPreference]);
 
   const handleStepAction = async () => {
     const step = ONBOARDING_STEPS[currentStep];
@@ -129,7 +134,16 @@ export default function OnboardingTour({ onComplete }) {
   };
 
   const completeOnboarding = async () => {
-    localStorage.setItem('growth-os-onboarding-completed', 'true');
+    // Mark onboarding as completed in Firestore
+    if (currentUser) {
+      try {
+        await updateUserPreferences(currentUser.uid, {
+          onboardingCompleted: true
+        });
+      } catch (error) {
+        console.error('Failed to update onboarding status:', error);
+      }
+    }
 
     // Award all bonus credits
     if (earnedRewards.length > 0) {
@@ -149,12 +163,22 @@ export default function OnboardingTour({ onComplete }) {
           if (value > 0) formData.append(key, value.toString());
         });
 
+        // Use Firebase auth headers
+        const headers = {};
+        if (currentUser) {
+          try {
+            const idToken = await currentUser.getIdToken();
+            headers['Authorization'] = `Bearer ${idToken}`;
+            headers['X-User-ID'] = currentUser.uid;
+          } catch (error) {
+            console.warn('Failed to get auth token for bonus credits:', error);
+            headers['X-User-ID'] = currentUser.uid;
+          }
+        }
+
         await fetch('/api/credits/bonus', {
           method: 'POST',
-          headers: {
-            'X-User-ID': localStorage.getItem('growth-os-user-id'),
-            'X-Session-ID': localStorage.getItem('growth-os-session-id')
-          },
+          headers,
           body: formData
         });
       } catch (error) {
@@ -178,7 +202,16 @@ export default function OnboardingTour({ onComplete }) {
       total_steps: ONBOARDING_STEPS.length
     });
 
-    localStorage.setItem('growth-os-onboarding-completed', 'true');
+    // Mark onboarding as completed in Firestore
+    if (currentUser) {
+      try {
+        await updateUserPreferences(currentUser.uid, {
+          onboardingCompleted: true
+        });
+      } catch (error) {
+        console.error('Failed to update onboarding status:', error);
+      }
+    }
     setIsVisible(false);
     if (onComplete) onComplete();
   };

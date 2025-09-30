@@ -27,7 +27,6 @@ const PricingPage = lazy(() => import('./pages/PricingPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'));
 const AuthDemo = lazy(() => import('./pages/AuthDemo.jsx'));
 const AuthPage = lazy(() => import('./pages/AuthPage.jsx'));
-const SubscriptionsPage = lazy(() => import('./pages/SubscriptionsPage.jsx'));
 
 function Shell() {
   const [theme, setTheme] = useState('dark');
@@ -65,7 +64,7 @@ function Shell() {
   const location = useLocation();
   const { primaryText } = useDynamicTextColor();
 
-  const routes = ['/dashboard', '/download', '/transcribe', '/tts', '/workflows', '/workspace', '/knowledge', '/subscriptions', '/settings', '/pricing'];
+  const routes = ['/dashboard', '/download', '/transcribe', '/tts', '/workflows', '/workspace', '/knowledge', '/settings', '/pricing'];
   const currentIndex = routes.indexOf(location.pathname);
 
   const swipeGestureRef = useSwipeGestures({
@@ -243,7 +242,6 @@ function Shell() {
                 <Route path="/knowledge" element={<KnowledgePage />} />
                 <Route path="/workflows" element={<WorkflowPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
-                <Route path="/subscriptions" element={<SubscriptionsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/auth-demo" element={<AuthDemo />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -11,7 +11,16 @@ import {
   getCurrentPlan,
   getActiveSubscription,
   subscribeToProduct,
-  debugEntitlements
+  debugEntitlements,
+  initializeRevenueCat,
+  purchaseProduct,
+  purchaseProductById,
+  getCustomerInfo,
+  checkCheckoutResult,
+  universalPurchase,
+  activateStarterPlan,
+  detectPlatform,
+  updateSubscriptionStatus
 } from '../services/revenueCat.js';
 
 export default function PricingPage() {
@@ -27,7 +36,7 @@ export default function PricingPage() {
   const [isSubscribing, setIsSubscribing] = useState(null);
   const [isAnnual, setIsAnnual] = useState(false);
 
-  // Load subscription data
+  // Load subscription data and initialize RevenueCat
   useEffect(() => {
     const loadSubscriptionData = async () => {
       if (!currentUser) {
@@ -37,6 +46,62 @@ export default function PricingPage() {
 
       try {
         setIsLoading(true);
+
+        // Initialize RevenueCat with user ID
+        await initializeRevenueCat(currentUser.uid);
+
+        // Check for checkout success/failure from URL params
+        const checkoutResult = checkCheckoutResult();
+        if (checkoutResult) {
+          if (checkoutResult.success) {
+            addToast(checkoutResult.message, 'success');
+
+            // Get the product_id from URL params to know which subscription to activate
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('product_id');
+
+            if (productId) {
+              console.log(`🔄 Checkout successful for ${productId}, updating subscription status...`);
+              try {
+                // Update subscription status in backend
+                const updateResult = await updateSubscriptionStatus(currentUser.uid, productId);
+                if (updateResult.success) {
+                  console.log('✅ Subscription status updated successfully:', updateResult.subscription);
+                  addToast(`${updateResult.message} - Welcome to ${updateResult.subscription.tier}!`, 'success');
+                } else {
+                  console.error('Failed to update subscription status:', updateResult.error);
+                  addToast('Subscription activated but failed to update locally. Please refresh the page.', 'warning');
+                }
+              } catch (error) {
+                console.error('Error updating subscription status:', error);
+                addToast('Subscription activated but failed to update locally. Please refresh the page.', 'warning');
+              }
+            }
+
+            // Force refresh subscription data after successful payment
+            console.log('🔄 Refreshing subscription data...');
+            try {
+              const updatedResult = await getSubscriberInfo(currentUser.uid);
+              if (updatedResult.success) {
+                setSubscriber(updatedResult.subscriber);
+                setCurrentPlan(getCurrentPlan(updatedResult.subscriber));
+                console.log('✅ Subscription data updated after successful checkout');
+              }
+            } catch (error) {
+              console.error('Failed to refresh subscription data after checkout:', error);
+            }
+          } else if (checkoutResult.cancelled) {
+            addToast(checkoutResult.message, 'info');
+          }
+
+          // Clean up URL params
+          const url = new URL(window.location);
+          url.searchParams.delete('success');
+          url.searchParams.delete('cancelled');
+          url.searchParams.delete('product_id');
+          window.history.replaceState({}, '', url);
+        }
+
         const result = await getSubscriberInfo(currentUser.uid);
 
         if (result.success) {
@@ -64,23 +129,60 @@ export default function PricingPage() {
       return;
     }
 
+    // Handle free starter plan activation
+    if (productId === 'growth_starter') {
+      setIsSubscribing(productId);
+      try {
+        const result = await activateStarterPlan(currentUser.uid);
+        if (result.success) {
+          addToast(result.message, 'success');
+          // Reload subscription data
+          const updatedResult = await getSubscriberInfo(currentUser.uid);
+          if (updatedResult.success) {
+            setSubscriber(updatedResult.subscriber);
+            setCurrentPlan(getCurrentPlan(updatedResult.subscriber));
+          }
+        } else {
+          addToast(`Failed to activate starter plan: ${result.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Starter activation error:', error);
+        addToast('Failed to activate starter plan', 'error');
+      } finally {
+        setIsSubscribing(null);
+      }
+      return;
+    }
+
     setIsSubscribing(productId);
 
     try {
-      const result = await subscribeToProduct(currentUser.uid, productId);
+      const platform = detectPlatform();
+      console.log(`🎯 Initiating purchase for ${productId} on ${platform}`);
+
+      const result = await universalPurchase(currentUser.uid, productId);
 
       if (result.success) {
-        addToast('Subscription initiated! Redirecting to complete setup...', 'success');
+        if (result.redirected) {
+          // For web - user will be redirected to Stripe Checkout
+          addToast(result.message, 'info');
+          // Don't reset isSubscribing as user is being redirected
+          return;
+        } else {
+          // For native - purchase completed
+          addToast('🎉 Subscription successful! Welcome to your new plan!', 'success');
 
-        // Reload subscription data
-        const updatedResult = await getSubscriberInfo(currentUser.uid);
-        if (updatedResult.success) {
-          setSubscriber(updatedResult.subscriber);
-          setCurrentPlan(getCurrentPlan(updatedResult.subscriber));
+          // Reload subscription data
+          const updatedResult = await getSubscriberInfo(currentUser.uid);
+          if (updatedResult.success) {
+            setSubscriber(updatedResult.subscriber);
+            setCurrentPlan(getCurrentPlan(updatedResult.subscriber));
+          }
         }
-
-        // Navigate to subscriptions page for full management
-        setTimeout(() => navigate('/subscriptions'), 2000);
+      } else if (result.cancelled) {
+        addToast('Purchase was cancelled', 'info');
+      } else if (result.pending) {
+        addToast('Payment is pending. Your subscription will activate once confirmed.', 'warning');
       } else {
         addToast(`Subscription failed: ${result.error}`, 'error');
       }

@@ -11,7 +11,13 @@ import {
   getActiveSubscription,
   subscribeToProduct,
   debugEntitlements,
-  createMockSubscriber
+  createMockSubscriber,
+  initializeRevenueCat,
+  universalPurchase,
+  activateStarterPlan,
+  checkCheckoutResult,
+  detectPlatform,
+  isNativePlatform
 } from '../services/revenueCat.js';
 
 export default function SubscriptionsPage() {
@@ -25,7 +31,7 @@ export default function SubscriptionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscribing, setIsSubscribing] = useState(null);
 
-  // Load subscription data
+  // Load subscription data and handle checkout results
   useEffect(() => {
     const loadSubscriptionData = async () => {
       if (!currentUser) {
@@ -35,6 +41,25 @@ export default function SubscriptionsPage() {
 
       try {
         setIsLoading(true);
+
+        // Initialize RevenueCat with user ID
+        await initializeRevenueCat(currentUser.uid);
+
+        // Check for checkout success/failure from URL params
+        const checkoutResult = checkCheckoutResult();
+        if (checkoutResult) {
+          if (checkoutResult.success) {
+            addToast(checkoutResult.message, 'success');
+          } else if (checkoutResult.cancelled) {
+            addToast(checkoutResult.message, 'info');
+          }
+
+          // Clean up URL params
+          const url = new URL(window.location);
+          url.searchParams.delete('success');
+          url.searchParams.delete('cancelled');
+          window.history.replaceState({}, '', url);
+        }
 
         // Use Firebase UID as app user ID for RevenueCat
         const appUserId = currentUser.uid;
@@ -68,20 +93,60 @@ export default function SubscriptionsPage() {
       return;
     }
 
+    // Handle free starter plan activation
+    if (productId === 'growth_starter') {
+      setIsSubscribing(productId);
+      try {
+        const result = await activateStarterPlan(currentUser.uid);
+        if (result.success) {
+          addToast(result.message, 'success');
+          // Reload subscription data
+          const updatedResult = await getSubscriberInfo(currentUser.uid);
+          if (updatedResult.success) {
+            setSubscriber(updatedResult.subscriber);
+            setCurrentPlan(getCurrentPlan(updatedResult.subscriber));
+          }
+        } else {
+          addToast(`Failed to activate starter plan: ${result.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('Starter activation error:', error);
+        addToast('Failed to activate starter plan', 'error');
+      } finally {
+        setIsSubscribing(null);
+      }
+      return;
+    }
+
     setIsSubscribing(productId);
 
     try {
-      const result = await subscribeToProduct(currentUser.uid, productId);
+      const platform = detectPlatform();
+      console.log(`🎯 Initiating purchase for ${productId} on ${platform}`);
+
+      const result = await universalPurchase(currentUser.uid, productId);
 
       if (result.success) {
-        addToast('Subscription initiated! Check your email for payment details.', 'success');
+        if (result.redirected) {
+          // For web - user will be redirected to Stripe Checkout
+          addToast(result.message, 'info');
+          // Don't reset isSubscribing as user is being redirected
+          return;
+        } else {
+          // For native - purchase completed
+          addToast('🎉 Subscription successful! Welcome to your new plan!', 'success');
 
-        // Reload subscription data
-        const updatedResult = await getSubscriberInfo(currentUser.uid);
-        if (updatedResult.success) {
-          setSubscriber(updatedResult.subscriber);
-          setCurrentPlan(getCurrentPlan(updatedResult.subscriber));
+          // Reload subscription data
+          const updatedResult = await getSubscriberInfo(currentUser.uid);
+          if (updatedResult.success) {
+            setSubscriber(updatedResult.subscriber);
+            setCurrentPlan(getCurrentPlan(updatedResult.subscriber));
+          }
         }
+      } else if (result.cancelled) {
+        addToast('Purchase was cancelled', 'info');
+      } else if (result.pending) {
+        addToast('Payment is pending. Your subscription will activate once confirmed.', 'warning');
       } else {
         addToast(`Subscription failed: ${result.error}`, 'error');
       }
@@ -169,11 +234,11 @@ export default function SubscriptionsPage() {
               </div>
             ) : (
               <PrimaryButton
-                variant="secondary"
                 className="w-full"
-                disabled
+                onClick={() => handleSubscribe('growth_starter')}
+                disabled={isSubscribing === 'growth_starter'}
               >
-                Downgrade (Contact Support)
+                {isSubscribing === 'growth_starter' ? 'Activating...' : 'Get Started Free'}
               </PrimaryButton>
             )}
           </div>
@@ -283,6 +348,8 @@ export default function SubscriptionsPage() {
           <GlassCard title="Debug Info" subtitle="RevenueCat integration details (dev only)">
             <div className="space-y-2 text-sm">
               <p><strong>App User ID:</strong> {currentUser?.uid}</p>
+              <p><strong>Platform:</strong> {detectPlatform()}</p>
+              <p><strong>Purchase Method:</strong> {isNativePlatform() ? 'Native SDK' : 'Stripe Checkout'}</p>
               <p><strong>Current Plan:</strong> {currentPlan}</p>
               <p><strong>Active Entitlements:</strong> {subscriber.active_entitlements?.join(', ') || 'None'}</p>
               <p><strong>Active Subscription:</strong> {activeSubscription?.productId || 'None'}</p>

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../firebase/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useToast } from '../components/ToastContext.jsx';
 import { useDynamicTextColor } from '../hooks/useDynamicTextColor.js';
 import GlassCard from '../components/GlassCard.jsx';
 
 export default function DashboardPage() {
+  const { currentUser } = useAuth();
   const { theme } = useTheme();
   const { addToast } = useToast();
   const { primaryText } = useDynamicTextColor();
@@ -23,15 +25,23 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchUserData = async () => {
+      if (!currentUser?.uid) {
+        console.log('No authenticated user found');
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
+        console.log(`🔄 Fetching dashboard data for user: ${currentUser.uid}`);
 
         // Fetch user analytics
         const analyticsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/analytics/user`, {
           method: 'GET',
           headers: {
-            'X-User-ID': localStorage.getItem('growth-os-user-id') || `user_${Date.now()}`,
-            'X-Session-ID': localStorage.getItem('growth-os-session-id') || `session_${Date.now()}`,
+            'X-User-ID': currentUser.uid,
+            'Authorization': `Bearer ${await currentUser.getIdToken()}`,
+            'Content-Type': 'application/json'
           },
         });
 
@@ -44,8 +54,9 @@ export default function DashboardPage() {
         const quotaResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/credits/quota`, {
           method: 'GET',
           headers: {
-            'X-User-ID': localStorage.getItem('growth-os-user-id') || `user_${Date.now()}`,
-            'X-Session-ID': localStorage.getItem('growth-os-session-id') || `session_${Date.now()}`,
+            'X-User-ID': currentUser.uid,
+            'Authorization': `Bearer ${await currentUser.getIdToken()}`,
+            'Content-Type': 'application/json'
           },
         });
 
@@ -63,7 +74,7 @@ export default function DashboardPage() {
     };
 
     fetchUserData();
-  }, [addToast]);
+  }, [currentUser?.uid, addToast]);
 
   const formatNumber = (num) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
