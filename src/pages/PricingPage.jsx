@@ -11,16 +11,7 @@ import {
   getCurrentPlan,
   getActiveSubscription,
   subscribeToProduct,
-  debugEntitlements,
-  initializeRevenueCat,
-  purchaseProduct,
-  purchaseProductById,
-  getCustomerInfo,
-  checkCheckoutResult,
-  universalPurchase,
-  activateStarterPlan,
-  detectPlatform,
-  updateSubscriptionStatus
+  debugEntitlements
 } from '../services/revenueCat.js';
 
 export default function PricingPage() {
@@ -35,8 +26,31 @@ export default function PricingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscribing, setIsSubscribing] = useState(null);
   const [isAnnual, setIsAnnual] = useState(false);
+  const [pricingData, setPricingData] = useState(null);
+  const [loadingPrices, setLoadingPrices] = useState(true);
 
-  // Load subscription data and initialize RevenueCat
+  // Load pricing from backend
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        setLoadingPrices(true);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/credits/pricing`);
+        if (response.ok) {
+          const data = await response.json();
+          setPricingData(data.tiers);
+          console.log('✅ Fetched live pricing from backend:', data.tiers);
+        }
+      } catch (error) {
+        console.error('Error fetching pricing:', error);
+      } finally {
+        setLoadingPrices(false);
+      }
+    };
+
+    fetchPricing();
+  }, []);
+
+  // Load subscription data
   useEffect(() => {
     const loadSubscriptionData = async () => {
       if (!currentUser) {
@@ -46,62 +60,6 @@ export default function PricingPage() {
 
       try {
         setIsLoading(true);
-
-        // Initialize RevenueCat with user ID
-        await initializeRevenueCat(currentUser.uid);
-
-        // Check for checkout success/failure from URL params
-        const checkoutResult = checkCheckoutResult();
-        if (checkoutResult) {
-          if (checkoutResult.success) {
-            addToast(checkoutResult.message, 'success');
-
-            // Get the product_id from URL params to know which subscription to activate
-            const urlParams = new URLSearchParams(window.location.search);
-            const productId = urlParams.get('product_id');
-
-            if (productId) {
-              console.log(`🔄 Checkout successful for ${productId}, updating subscription status...`);
-              try {
-                // Update subscription status in backend
-                const updateResult = await updateSubscriptionStatus(currentUser.uid, productId);
-                if (updateResult.success) {
-                  console.log('✅ Subscription status updated successfully:', updateResult.subscription);
-                  addToast(`${updateResult.message} - Welcome to ${updateResult.subscription.tier}!`, 'success');
-                } else {
-                  console.error('Failed to update subscription status:', updateResult.error);
-                  addToast('Subscription activated but failed to update locally. Please refresh the page.', 'warning');
-                }
-              } catch (error) {
-                console.error('Error updating subscription status:', error);
-                addToast('Subscription activated but failed to update locally. Please refresh the page.', 'warning');
-              }
-            }
-
-            // Force refresh subscription data after successful payment
-            console.log('🔄 Refreshing subscription data...');
-            try {
-              const updatedResult = await getSubscriberInfo(currentUser.uid);
-              if (updatedResult.success) {
-                setSubscriber(updatedResult.subscriber);
-                setCurrentPlan(getCurrentPlan(updatedResult.subscriber));
-                console.log('✅ Subscription data updated after successful checkout');
-              }
-            } catch (error) {
-              console.error('Failed to refresh subscription data after checkout:', error);
-            }
-          } else if (checkoutResult.cancelled) {
-            addToast(checkoutResult.message, 'info');
-          }
-
-          // Clean up URL params
-          const url = new URL(window.location);
-          url.searchParams.delete('success');
-          url.searchParams.delete('cancelled');
-          url.searchParams.delete('product_id');
-          window.history.replaceState({}, '', url);
-        }
-
         const result = await getSubscriberInfo(currentUser.uid);
 
         if (result.success) {
@@ -123,66 +81,56 @@ export default function PricingPage() {
     loadSubscriptionData();
   }, [currentUser, addToast]);
 
+  // Helper to get price from fetched pricing data
+  const getPrice = (tier, annual = false) => {
+    if (!pricingData) {
+      // Fallback to default prices if data not loaded
+      const defaults = {
+        pro: annual ? 290 : 29,
+        scaler: annual ? 990 : 99
+      };
+      return defaults[tier] || 0;
+    }
+
+    const tierData = pricingData.find(t => t.tier === tier);
+    if (!tierData) return 0;
+
+    return annual ? (tierData.annual_price || tierData.price * 10) : tierData.price;
+  };
+
+  // Helper to format currency
+  const formatPrice = (tier, annual = false) => {
+    const price = getPrice(tier, annual);
+    return `$${Math.round(price)}`;
+  };
+
+  // Helper to calculate monthly equivalent for annual
+  const getMonthlyEquivalent = (tier) => {
+    const annualPrice = getPrice(tier, true);
+    const monthlyEquivalent = annualPrice / 12;
+    return `$${monthlyEquivalent.toFixed(2)}/month billed annually`;
+  };
+
   const handleSubscribe = async (productId) => {
     if (!currentUser) {
       addToast('Please log in to subscribe', 'error');
       return;
     }
 
-    // Handle free starter plan activation
-    if (productId === 'growth_starter') {
-      setIsSubscribing(productId);
-      try {
-        const result = await activateStarterPlan(currentUser.uid);
-        if (result.success) {
-          addToast(result.message, 'success');
-          // Reload subscription data
-          const updatedResult = await getSubscriberInfo(currentUser.uid);
-          if (updatedResult.success) {
-            setSubscriber(updatedResult.subscriber);
-            setCurrentPlan(getCurrentPlan(updatedResult.subscriber));
-          }
-        } else {
-          addToast(`Failed to activate starter plan: ${result.error}`, 'error');
-        }
-      } catch (error) {
-        console.error('Starter activation error:', error);
-        addToast('Failed to activate starter plan', 'error');
-      } finally {
-        setIsSubscribing(null);
-      }
-      return;
-    }
-
     setIsSubscribing(productId);
 
     try {
-      const platform = detectPlatform();
-      console.log(`🎯 Initiating purchase for ${productId} on ${platform}`);
-
-      const result = await universalPurchase(currentUser.uid, productId);
+      const result = await subscribeToProduct(currentUser.uid, productId);
 
       if (result.success) {
-        if (result.redirected) {
-          // For web - user will be redirected to Stripe Checkout
-          addToast(result.message, 'info');
-          // Don't reset isSubscribing as user is being redirected
-          return;
-        } else {
-          // For native - purchase completed
-          addToast('🎉 Subscription successful! Welcome to your new plan!', 'success');
+        addToast('Subscription initiated! Redirecting to complete setup...', 'success');
 
-          // Reload subscription data
-          const updatedResult = await getSubscriberInfo(currentUser.uid);
-          if (updatedResult.success) {
-            setSubscriber(updatedResult.subscriber);
-            setCurrentPlan(getCurrentPlan(updatedResult.subscriber));
-          }
+        // Reload subscription data
+        const updatedResult = await getSubscriberInfo(currentUser.uid);
+        if (updatedResult.success) {
+          setSubscriber(updatedResult.subscriber);
+          setCurrentPlan(getCurrentPlan(updatedResult.subscriber));
         }
-      } else if (result.cancelled) {
-        addToast('Purchase was cancelled', 'info');
-      } else if (result.pending) {
-        addToast('Payment is pending. Your subscription will activate once confirmed.', 'warning');
       } else {
         addToast(`Subscription failed: ${result.error}`, 'error');
       }
@@ -219,9 +167,9 @@ export default function PricingPage() {
         <PrimaryButton
           variant="secondary"
           className="w-full"
-          onClick={() => navigate('/subscriptions')}
+          disabled
         >
-          Manage Subscription
+          Current Plan
         </PrimaryButton>
       );
     }
@@ -360,13 +308,17 @@ export default function PricingPage() {
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold theme-text-primary">{PLANS.pro_monthly.name}</h3>
               <div className="text-4xl font-bold theme-text-primary mt-2 mb-1">
-                {isAnnual ? '$290' : '$29'}
+                {loadingPrices ? (
+                  <span className="text-2xl">Loading...</span>
+                ) : (
+                  formatPrice('pro', isAnnual)
+                )}
               </div>
               <p className="theme-text-muted text-sm">
                 {isAnnual ? 'per year' : 'per month'}
               </p>
-              {isAnnual && (
-                <p className="theme-text-muted text-xs mt-1">$24/month billed annually</p>
+              {isAnnual && !loadingPrices && (
+                <p className="theme-text-muted text-xs mt-1">{getMonthlyEquivalent('pro')}</p>
               )}
             </div>
 
@@ -390,13 +342,17 @@ export default function PricingPage() {
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold theme-text-primary">{PLANS.scaler_monthly.name}</h3>
               <div className="text-4xl font-bold theme-text-primary mt-2 mb-1">
-                {isAnnual ? '$990' : '$99'}
+                {loadingPrices ? (
+                  <span className="text-2xl">Loading...</span>
+                ) : (
+                  formatPrice('scaler', isAnnual)
+                )}
               </div>
               <p className="theme-text-muted text-sm">
                 {isAnnual ? 'per year' : 'per month'}
               </p>
-              {isAnnual && (
-                <p className="theme-text-muted text-xs mt-1">$82.50/month billed annually</p>
+              {isAnnual && !loadingPrices && (
+                <p className="theme-text-muted text-xs mt-1">{getMonthlyEquivalent('scaler')}</p>
               )}
             </div>
 
@@ -505,11 +461,8 @@ export default function PricingPage() {
             Join thousands of creators and marketers who trust Growth OS for their advertising content.
           </p>
           <div className="flex gap-4 justify-center">
-            <PrimaryButton onClick={() => navigate('/subscriptions')}>
-              View All Plans
-            </PrimaryButton>
-            <PrimaryButton variant="secondary" onClick={() => navigate('/dashboard')}>
-              Start Free
+            <PrimaryButton onClick={() => navigate('/dashboard')}>
+              Get Started
             </PrimaryButton>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import GlassCard from '../components/GlassCard.jsx';
 import PrimaryButton from '../components/PrimaryButton.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
@@ -6,7 +6,7 @@ import { useToast } from '../components/ToastContext.jsx';
 import { usePreferences } from '../context/PreferencesContext.jsx';
 import { useProfile } from '../context/ProfileContext.jsx';
 import { predefinedThemes, themeCategories, getThemeAccentColors } from '../config/themes.js';
-import { useAuth, usePlan } from '../firebase/AuthContext.jsx';
+import { useAuth } from '../firebase/AuthContext.jsx';
 import { LogoutButton } from '../firebase/index.js';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,12 +16,49 @@ export default function SettingsPage() {
   const { preferences, updatePreference, resetPreferences } = usePreferences();
   const { profile, updateProfile, updateMultipleFields, resetProfile } = useProfile();
   const { currentUser, userProfile } = useAuth();
-  const plan = usePlan();
   const navigate = useNavigate();
   const isDark = theme === 'dark';
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [plan, setPlan] = useState('starter');
 
+  // Fetch subscription tier from backend (same as dashboard)
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (!currentUser) return;
+
+      try {
+        const quotaResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/credits/quota`, {
+          method: 'GET',
+          headers: {
+            'X-User-ID': currentUser.uid,
+            'Authorization': `Bearer ${await currentUser.getIdToken()}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (quotaResponse.ok) {
+          const quotaData = await quotaResponse.json();
+          const tier = quotaData.quota.subscription_tier;
+          console.log('✅ Fetched subscription tier for settings:', tier);
+          setPlan(tier);
+        }
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+      }
+    };
+
+    fetchSubscription();
+  }, [currentUser]);
+
+  const handleCancelSubscription = async () => {
+    try {
+      // This would integrate with RevenueCat to cancel subscription
+      addToast('Subscription cancellation requested. You will retain access until the end of your billing period.', 'success');
+    } catch (error) {
+      addToast('Failed to cancel subscription. Please try again.', 'error');
+    }
+  };
 
   // Use standard theme text classes for proper contrast
   const labelText = 'theme-text-primary';
@@ -47,15 +84,6 @@ export default function SettingsPage() {
       setShowDeleteConfirm(false);
     } catch (error) {
       addToast('Failed to delete account. Please try again.', 'error');
-    }
-  };
-
-  const handleCancelSubscription = async () => {
-    try {
-      // This would integrate with RevenueCat to cancel subscription
-      addToast('Subscription cancellation requested. You will retain access until the end of your billing period.', 'success');
-    } catch (error) {
-      addToast('Failed to cancel subscription. Please try again.', 'error');
     }
   };
 
@@ -468,7 +496,7 @@ export default function SettingsPage() {
                 <div className="text-sm space-y-2">
                   <p><strong className="theme-text-primary">Email:</strong> <span className="theme-text-muted">{currentUser?.email}</span></p>
                   <p><strong className="theme-text-primary">UID:</strong> <span className="theme-text-muted font-mono text-xs">{currentUser?.uid}</span></p>
-                  <p><strong className="theme-text-primary">Plan:</strong> <span className={`capitalize font-medium ${plan === 'pro' ? 'text-emerald-400' : 'text-blue-400'}`}>{plan}</span></p>
+                  <p><strong className="theme-text-primary">Plan:</strong> <span className={`capitalize font-medium ${plan === 'scaler' ? 'text-purple-400' : plan === 'pro' ? 'text-emerald-400' : 'text-blue-400'}`}>{plan}</span></p>
                   {userProfile?.createdAt && (
                     <p><strong className="theme-text-primary">Member since:</strong> <span className="theme-text-muted">{userProfile.createdAt.toDate?.()?.toLocaleDateString() || 'Recently'}</span></p>
                   )}
@@ -494,17 +522,19 @@ export default function SettingsPage() {
         <div className="space-y-6">
           <GlassCard title="Subscription & Account" subtitle="Manage your subscription and account settings.">
             <div className="space-y-4">
-              {plan === 'pro' && (
-                <div className="glass-panel p-4 bg-emerald-500/10 border border-emerald-500/20">
+              {(plan === 'pro' || plan === 'scaler') && (
+                <div className={`glass-panel p-4 ${plan === 'scaler' ? 'bg-purple-500/10 border border-purple-500/20' : 'bg-emerald-500/10 border border-emerald-500/20'}`}>
                   <div className="text-sm space-y-2">
-                    <p className="text-emerald-300 font-medium">✨ Pro Plan Active</p>
-                    <p className="theme-text-muted">You have access to all premium features.</p>
+                    <p className={`font-medium ${plan === 'scaler' ? 'text-purple-300' : 'text-emerald-300'}`}>
+                      ✨ {plan === 'scaler' ? 'Scaler' : 'Pro'} Plan Active
+                    </p>
+                    <p className="theme-text-muted">You have access to all {plan === 'scaler' ? 'enterprise' : 'premium'} features.</p>
                   </div>
                 </div>
               )}
 
               <div className="space-y-3">
-                {plan === 'pro' && (
+                {(plan === 'pro' || plan === 'scaler') && (
                   <button
                     type="button"
                     className="liquid-button w-full text-sm border-orange-400/60 bg-orange-500/15 text-orange-200 hover:ring-orange-300/50"

@@ -67,12 +67,14 @@ const ONBOARDING_STEPS = [
 
 export default function OnboardingTour({ onComplete }) {
   const { theme } = useTheme();
-  const { currentUser, getPreference } = useAuth();
+  const { currentUser, userPreferences } = useAuth();
   const navigate = useNavigate();
   const isDark = theme === 'dark';
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
   const [earnedPoints, setEarnedPoints] = useState(0);
   const [earnedRewards, setEarnedRewards] = useState([]);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -82,16 +84,36 @@ export default function OnboardingTour({ onComplete }) {
   const subtleText = 'theme-text-muted';
   const accentGradient = 'bg-gradient-to-r from-purple-500 to-pink-500';
 
+  // Initial check when component mounts
   useEffect(() => {
-    // Check if user has completed onboarding using Firebase preferences
-    if (currentUser) {
-      const hasCompletedOnboarding = getPreference('onboardingCompleted', false);
+    if (!hasCheckedOnboarding && currentUser && userPreferences !== null && userPreferences !== undefined) {
+      const hasCompletedOnboarding = userPreferences.onboardingCompleted || false;
+      console.log('🔍 Initial onboarding status check:', {
+        hasCompletedOnboarding,
+        userId: currentUser.uid,
+        preferencesLoaded: !!userPreferences
+      });
+
+      setHasCheckedOnboarding(true);
+
       if (!hasCompletedOnboarding) {
+        console.log('✅ Starting onboarding - user has not completed it yet');
         setIsVisible(true);
         trackEvent('onboarding_started');
+      } else {
+        console.log('⏭️ Onboarding already completed, skipping');
+        setIsVisible(false);
       }
     }
-  }, [currentUser, getPreference]);
+  }, [currentUser, userPreferences, hasCheckedOnboarding]);
+
+  // Watch for onboardingCompleted changes and hide if it becomes true
+  useEffect(() => {
+    if (userPreferences?.onboardingCompleted === true && isVisible) {
+      console.log('🔔 Onboarding was marked complete in Firestore, hiding widget');
+      setIsVisible(false);
+    }
+  }, [userPreferences?.onboardingCompleted, isVisible]);
 
   const handleStepAction = async () => {
     const step = ONBOARDING_STEPS[currentStep];
@@ -134,15 +156,26 @@ export default function OnboardingTour({ onComplete }) {
   };
 
   const completeOnboarding = async () => {
+    console.log('🎉 Completing onboarding...');
+
     // Mark onboarding as completed in Firestore
     if (currentUser) {
       try {
-        await updateUserPreferences(currentUser.uid, {
+        console.log('💾 Saving onboardingCompleted=true to Firestore for user:', currentUser.uid);
+        const result = await updateUserPreferences(currentUser.uid, {
           onboardingCompleted: true
         });
+
+        if (result.error) {
+          console.error('❌ Firestore update failed:', result.error);
+        } else {
+          console.log('✅ Onboarding completion saved to Firestore successfully');
+        }
       } catch (error) {
-        console.error('Failed to update onboarding status:', error);
+        console.error('❌ Exception during Firestore update:', error);
       }
+    } else {
+      console.error('❌ No currentUser available to save onboarding status');
     }
 
     // Award all bonus credits
@@ -192,11 +225,20 @@ export default function OnboardingTour({ onComplete }) {
       rewards_earned: earnedRewards.length
     });
 
+    console.log('🚀 Closing onboarding widget...');
     setIsVisible(false);
-    if (onComplete) onComplete();
+    setHasCheckedOnboarding(true); // Ensure it won't show again
+
+    if (onComplete) {
+      onComplete();
+    }
+
+    console.log('✨ Onboarding complete!');
   };
 
   const skipOnboarding = async () => {
+    console.log('⏭️ Skipping onboarding...');
+
     await trackEvent('onboarding_skipped', {
       skipped_at_step: currentStep + 1,
       total_steps: ONBOARDING_STEPS.length
@@ -205,15 +247,69 @@ export default function OnboardingTour({ onComplete }) {
     // Mark onboarding as completed in Firestore
     if (currentUser) {
       try {
-        await updateUserPreferences(currentUser.uid, {
+        console.log('💾 Saving onboardingCompleted=true (skip) to Firestore for user:', currentUser.uid);
+        const result = await updateUserPreferences(currentUser.uid, {
           onboardingCompleted: true
         });
+
+        if (result.error) {
+          console.error('❌ Firestore update failed:', result.error);
+        } else {
+          console.log('✅ Onboarding skip status saved to Firestore successfully');
+        }
       } catch (error) {
-        console.error('Failed to update onboarding status:', error);
+        console.error('❌ Exception during Firestore update:', error);
       }
+    } else {
+      console.error('❌ No currentUser available to save skip status');
     }
+
     setIsVisible(false);
-    if (onComplete) onComplete();
+    setHasCheckedOnboarding(true);
+
+    if (onComplete) {
+      onComplete();
+    }
+
+    console.log('✨ Onboarding skipped and closed');
+  };
+
+  const dismissOnboarding = async () => {
+    console.log('✕ Dismissing onboarding...');
+
+    await trackEvent('onboarding_dismissed', {
+      dismissed_at_step: currentStep + 1,
+      total_steps: ONBOARDING_STEPS.length
+    });
+
+    // Mark onboarding as completed in Firestore so it won't show again
+    if (currentUser) {
+      try {
+        console.log('💾 Saving onboardingCompleted=true (dismiss) to Firestore for user:', currentUser.uid);
+        const result = await updateUserPreferences(currentUser.uid, {
+          onboardingCompleted: true
+        });
+
+        if (result.error) {
+          console.error('❌ Firestore update failed:', result.error);
+        } else {
+          console.log('✅ Onboarding dismissed and saved to Firestore successfully');
+        }
+      } catch (error) {
+        console.error('❌ Exception during Firestore update:', error);
+      }
+    } else {
+      console.error('❌ No currentUser available to save dismiss status');
+    }
+
+    setIsVisible(false);
+    setHasCheckedOnboarding(true);
+
+    if (onComplete) {
+      onComplete();
+    }
+
+    console.log('✨ Onboarding dismissed and closed');
   };
 
   if (!isVisible) return null;
@@ -222,95 +318,165 @@ export default function OnboardingTour({ onComplete }) {
   const progress = ((currentStep + 1) / ONBOARDING_STEPS.length) * 100;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <GlassCard className="relative w-full max-w-2xl">
-        {/* Skip Button */}
-        <button
-          onClick={skipOnboarding}
-          className={`absolute top-4 right-4 text-sm ${subtleText} hover:text-current transition-colors`}
-        >
-          Skip Tour
-        </button>
-
-        {/* Progress Bar */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className={`text-sm font-medium ${labelText}`}>
-              Step {currentStep + 1} of {ONBOARDING_STEPS.length}
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">⭐</span>
-              <span className={`text-sm font-medium ${labelText}`}>{earnedPoints} points</span>
-            </div>
+    <div className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${
+      isMinimized ? 'w-16' : 'w-96 max-w-[calc(100vw-3rem)]'
+    }`}>
+      <GlassCard className={`relative shadow-2xl border border-white/20 ${isMinimized ? 'overflow-hidden' : ''}`}>
+        {isMinimized ? (
+          /* Minimized State - Compact Icon */
+          <div className="p-3">
+            <button
+              onClick={() => setIsMinimized(false)}
+              className="w-full flex flex-col items-center justify-center space-y-1 hover:scale-105 transition-transform"
+              title="Expand Onboarding"
+            >
+              <div className="text-2xl animate-bounce">🚀</div>
+              <div className="w-full bg-white/10 rounded-full h-1">
+                <div
+                  className={`h-1 rounded-full transition-all ${accentGradient}`}
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+              <div className="text-[10px] text-gray-400">{currentStep + 1}/{ONBOARDING_STEPS.length}</div>
+            </button>
+            <button
+              onClick={dismissOnboarding}
+              className="absolute top-1 right-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+              title="Dismiss"
+            >
+              ✕
+            </button>
           </div>
-          <div className="w-full bg-white/10 rounded-full h-2">
-            <div
-              className={`h-2 rounded-full transition-all duration-1000 ${accentGradient}`}
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-        </div>
-
-        {/* Step Content */}
-        <div className="text-center mb-8">
-          <h2 className={`text-3xl font-bold ${labelText} mb-4`}>{step.title}</h2>
-          <p className={`text-lg ${subtleText} leading-relaxed max-w-xl mx-auto`}>
-            {step.description}
-          </p>
-
-          {/* Reward Preview */}
-          {step.reward && (
-            <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">
-              <span className="text-sm">🎁</span>
-              <span className="text-sm font-medium">
-                {step.reward.type === 'points' ? `+${step.reward.value} points` :
-                 step.reward.type === 'bonus_credits' ? 'Bonus credits included!' :
-                 step.reward.type === 'achievement' ? `Unlock: ${step.reward.value}` :
-                 'Special reward!'}
-              </span>
+        ) : (
+          <>
+            {/* Header with Controls */}
+            <div className="flex items-center justify-between p-3 border-b border-white/10">
+              <div className="text-xs text-gray-400">
+                Step {currentStep + 1} of {ONBOARDING_STEPS.length}
+              </div>
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => setIsMinimized(true)}
+                  className={`text-xs ${subtleText} hover:text-current transition-colors px-2 py-1 rounded hover:bg-white/5`}
+                  title="Minimize"
+                >
+                  ↙
+                </button>
+                <button
+                  onClick={skipOnboarding}
+                  className={`text-xs ${subtleText} hover:text-current transition-colors px-2 py-1 rounded hover:bg-white/5`}
+                  title="Skip onboarding"
+                >
+                  Skip
+                </button>
+                <button
+                  onClick={dismissOnboarding}
+                  className={`text-xs ${subtleText} hover:text-current transition-colors px-2 py-1 rounded hover:bg-white/5`}
+                  title="Close and don't show again"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Visual Elements */}
-        <div className="flex justify-center mb-8">
-          <div className="grid grid-cols-3 gap-4 max-w-md">
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className={`h-16 rounded-lg transition-all duration-500 ${
-                  i <= currentStep
-                    ? 'bg-gradient-to-br from-emerald-500/30 to-teal-500/30 border border-emerald-500/40'
-                    : 'bg-white/5 border border-white/10'
-                }`}
-              >
-                <div className="h-full flex items-center justify-center">
-                  {i <= currentStep ? '✨' : '⬜'}
+            {/* Content */}
+            <div className="p-4">
+              {/* Progress Bar */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-xs ${subtleText}`}>Progress</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm">⭐</span>
+                    <span className={`text-xs font-medium ${labelText}`}>{earnedPoints} pts</span>
+                  </div>
+                </div>
+                <div className="w-full bg-white/10 rounded-full h-1.5">
+                  <div
+                    className={`h-1.5 rounded-full transition-all duration-1000 ${accentGradient}`}
+                    style={{ width: `${progress}%` }}
+                  ></div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Action Button */}
-        <div className="flex justify-center">
-          <button
-            onClick={handleStepAction}
-            disabled={isAnimating}
-            className={`
-              px-8 py-4 rounded-lg font-medium text-white transition-all transform
-              ${accentGradient} hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed
-              ${isAnimating ? 'animate-pulse' : ''}
-            `}
-          >
-            {isAnimating ? 'Awesome! 🎉' : step.action}
-          </button>
-        </div>
+              {/* Step Content */}
+              <div className="mb-4">
+                <h3 className={`text-lg font-bold ${labelText} mb-2`}>{step.title}</h3>
+                <p className={`text-sm ${subtleText} leading-relaxed`}>
+                  {step.description}
+                </p>
+
+                {/* Reward Preview */}
+                {step.reward && (
+                  <div className="mt-3 inline-flex items-center gap-1.5 px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-md border border-emerald-500/30">
+                    <span className="text-xs">🎁</span>
+                    <span className="text-xs font-medium">
+                      {step.reward.type === 'points' ? `+${step.reward.value} pts` :
+                       step.reward.type === 'bonus_credits' ? 'Bonus credits!' :
+                       step.reward.type === 'achievement' ? `${step.reward.value}` :
+                       'Reward!'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer with Actions */}
+            <div className="border-t border-white/10 p-4">
+              <div className="flex items-center justify-between">
+                {/* Previous Button */}
+                <button
+                  onClick={() => {
+                    if (currentStep > 0) {
+                      setCurrentStep(currentStep - 1);
+                    }
+                  }}
+                  disabled={currentStep === 0}
+                  className={`text-xs px-3 py-2 rounded transition-colors ${
+                    currentStep === 0
+                      ? 'text-gray-500 cursor-not-allowed'
+                      : `${subtleText} hover:text-current`
+                  }`}
+                >
+                  ← Previous
+                </button>
+
+                {/* Action Button */}
+                <button
+                  onClick={handleStepAction}
+                  disabled={isAnimating}
+                  className={`
+                    px-4 py-2 rounded-md text-sm font-medium text-white transition-all
+                    ${accentGradient} hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed
+                    ${isAnimating ? 'animate-pulse' : ''}
+                  `}
+                >
+                  {isAnimating ? 'Great! 🎉' : step.action}
+                </button>
+              </div>
+
+              {/* Step Indicators */}
+              <div className="flex justify-center mt-3 space-x-1">
+                {ONBOARDING_STEPS.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      i === currentStep
+                        ? 'bg-purple-400'
+                        : i < currentStep
+                        ? 'bg-emerald-400'
+                        : 'bg-white/20'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Reward Animation */}
         {isAnimating && step.reward && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="animate-bounce text-4xl">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <div className="animate-bounce text-2xl">
               {step.reward.type === 'points' ? '⭐' :
                step.reward.type === 'bonus_credits' ? '🎁' :
                step.reward.type === 'achievement' ? '🏆' : '✨'}
@@ -318,21 +484,6 @@ export default function OnboardingTour({ onComplete }) {
           </div>
         )}
 
-        {/* Mini Navigation Dots */}
-        <div className="flex justify-center gap-2 mt-6">
-          {ONBOARDING_STEPS.map((_, i) => (
-            <div
-              key={i}
-              className={`w-2 h-2 rounded-full transition-all ${
-                i === currentStep
-                  ? 'bg-purple-500'
-                  : i < currentStep
-                  ? 'bg-emerald-500'
-                  : 'bg-white/20'
-              }`}
-            ></div>
-          ))}
-        </div>
       </GlassCard>
     </div>
   );

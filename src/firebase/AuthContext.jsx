@@ -5,7 +5,8 @@ import {
   getUserPreferences,
   getUserSubscription,
   subscribeToUserPreferences,
-  subscribeToUserSubscription
+  subscribeToUserSubscription,
+  syncSubscriptionFromBackend
 } from './firestoreService.js';
 import { autoMigrateOnStartup } from '../utils/migrateLocalToFirestore.js';
 
@@ -36,6 +37,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let preferencesUnsubscribe = null;
     let subscriptionUnsubscribe = null;
+    let syncInterval = null;
 
     const unsubscribe = onAuthStateChange(async (user) => {
       try {
@@ -65,26 +67,23 @@ export const AuthProvider = ({ children }) => {
           if (profileError) {
             console.warn('Profile error:', profileError);
           } else {
-            // Fetch current subscription tier from backend for the profile
-            try {
-              const quotaResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/credits/quota`, {
-                method: 'GET',
-                headers: {
-                  'X-User-ID': user.uid,
-                  'Content-Type': 'application/json'
-                }
-              });
-
-              if (quotaResponse.ok) {
-                const quotaData = await quotaResponse.json();
-                profile.plan = quotaData.quota.subscription_tier;
-                console.log(`🔄 Updated user plan from backend: ${profile.plan}`);
-              }
-            } catch (quotaError) {
-              console.warn('Failed to fetch subscription tier from backend:', quotaError);
-            }
-
             setUserProfile(profile);
+          }
+
+          // Sync subscription data from backend to Firestore
+          // This ensures Firestore has the latest subscription info from Stripe/backend
+          try {
+            console.log('🔄 Syncing subscription from backend to Firestore...');
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+            const syncResult = await syncSubscriptionFromBackend(user.uid, apiBaseUrl);
+
+            if (syncResult.synced) {
+              console.log('✅ Subscription synced successfully:', syncResult.subscription?.tier);
+            } else {
+              console.warn('⚠️ Subscription sync failed:', syncResult.error);
+            }
+          } catch (syncError) {
+            console.warn('⚠️ Failed to sync subscription from backend:', syncError);
           }
 
           // Set up real-time listeners for Firestore data
@@ -113,6 +112,20 @@ export const AuthProvider = ({ children }) => {
             console.warn('Firestore subscription setup failed:', firestoreError);
           }
 
+          // Set up periodic sync from backend to Firestore (every 30 seconds)
+          // This ensures subscription changes from Stripe are picked up quickly
+          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+          syncInterval = setInterval(async () => {
+            try {
+              const syncResult = await syncSubscriptionFromBackend(user.uid, apiBaseUrl);
+              if (syncResult.synced) {
+                console.log('🔄 Periodic subscription sync completed:', syncResult.subscription?.tier);
+              }
+            } catch (error) {
+              console.warn('⚠️ Periodic sync failed:', error);
+            }
+          }, 30000); // Sync every 30 seconds
+
         } else {
           // User signed out - clean up
           console.log('🔓 User signed out, cleaning up...');
@@ -122,7 +135,7 @@ export const AuthProvider = ({ children }) => {
           setUserSubscription(null);
           setMigrationStatus(null);
 
-          // Clean up subscriptions
+          // Clean up subscriptions and intervals
           if (preferencesUnsubscribe) {
             preferencesUnsubscribe();
             preferencesUnsubscribe = null;
@@ -130,6 +143,10 @@ export const AuthProvider = ({ children }) => {
           if (subscriptionUnsubscribe) {
             subscriptionUnsubscribe();
             subscriptionUnsubscribe = null;
+          }
+          if (syncInterval) {
+            clearInterval(syncInterval);
+            syncInterval = null;
           }
         }
       } catch (err) {
@@ -149,6 +166,7 @@ export const AuthProvider = ({ children }) => {
       unsubscribe();
       if (preferencesUnsubscribe) preferencesUnsubscribe();
       if (subscriptionUnsubscribe) subscriptionUnsubscribe();
+      if (syncInterval) clearInterval(syncInterval);
     };
   }, []);
 

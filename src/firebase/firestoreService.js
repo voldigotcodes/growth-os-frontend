@@ -85,10 +85,12 @@ export const updateUserPreferences = async (uid, updates) => {
       updatedAt: serverTimestamp()
     };
 
-    await updateDoc(prefsRef, updatedData);
+    // Use setDoc with merge to create document if it doesn't exist
+    await setDoc(prefsRef, updatedData, { merge: true });
+    console.log('✅ Preferences updated in Firestore:', updates);
     return { error: null };
   } catch (error) {
-    console.error('Error updating user preferences:', error);
+    console.error('❌ Error updating user preferences:', error);
     return { error: error.message };
   }
 };
@@ -169,11 +171,88 @@ export const updateUserSubscription = async (uid, updates) => {
       updatedAt: serverTimestamp()
     };
 
-    await updateDoc(subRef, updatedData);
+    // Use setDoc with merge to ensure document exists
+    await setDoc(subRef, updatedData, { merge: true });
     return { error: null };
   } catch (error) {
     console.error('Error updating user subscription:', error);
     return { error: error.message };
+  }
+};
+
+/**
+ * Sync subscription data from backend to Firestore
+ * This ensures real-time listeners pick up subscription changes from Stripe/RevenueCat
+ */
+export const syncSubscriptionFromBackend = async (uid, apiBaseUrl = 'http://localhost:8000') => {
+  try {
+    // Import auth to get ID token (avoid circular dependency by importing here)
+    const { auth } = await import('./firebaseConfig.js');
+    const user = auth.currentUser;
+
+    if (!user) {
+      return { error: 'No authenticated user' };
+    }
+
+    const idToken = await user.getIdToken();
+
+    // Fetch latest subscription data from backend
+    const response = await fetch(`${apiBaseUrl}/credits/quota`, {
+      method: 'GET',
+      headers: {
+        'X-User-ID': uid,
+        'Authorization': `Bearer ${idToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch subscription from backend: ${response.status}`);
+    }
+
+    const quotaData = await response.json();
+    const { quota } = quotaData;
+
+    // Map backend quota data to Firestore subscription format
+    const subscriptionData = {
+      tier: quota.subscription_tier || 'starter',
+      status: 'active', // Backend should provide this
+      productId: null, // Backend should provide this if available
+      customerId: quota.stripe_customer_id || null,
+      subscriptionId: quota.stripe_subscription_id || null,
+      billingPeriod: quota.billing_period || null,
+      renewalDate: quota.current_period_end || null,
+      entitlements: quota.entitlements || ['basic_features'],
+      credits: {
+        transcription_minutes: quota.transcription_minutes,
+        tts_characters: quota.tts_characters,
+        workflow_runs: quota.workflow_runs,
+        downloads: quota.downloads,
+        ai_modifications: quota.ai_modifications,
+        storage_mb: quota.storage_mb
+      },
+      usage: {
+        transcription_minutes: quota.usage?.transcription_minutes || 0,
+        tts_characters: quota.usage?.tts_characters || 0,
+        workflow_runs: quota.usage?.workflow_runs || 0,
+        downloads: quota.usage?.downloads || 0,
+        ai_modifications: quota.usage?.ai_modifications || 0,
+        storage_mb: quota.usage?.storage_mb || 0
+      }
+    };
+
+    // Update Firestore with backend data
+    const result = await updateUserSubscription(uid, subscriptionData);
+
+    if (result.error) {
+      return { synced: false, error: result.error };
+    }
+
+    console.log('✅ Subscription synced from backend to Firestore:', subscriptionData.tier);
+    return { synced: true, subscription: subscriptionData, error: null };
+  } catch (error) {
+    console.error('❌ Error syncing subscription from backend:', error);
+    return { synced: false, error: error.message };
   }
 };
 
