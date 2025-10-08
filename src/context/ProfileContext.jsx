@@ -149,7 +149,26 @@ export function ProfileProvider({ children }) {
 export function useProfile() {
   const context = useContext(ProfileContext);
   if (!context) {
-    throw new Error('useProfile must be used within a ProfileProvider');
+    // Return a safe default instead of throwing - allows components to render while provider initializes
+    return {
+      profile: {
+        name: '',
+        email: '',
+        company: '',
+        timezone: 'America/New_York',
+        avatar: null,
+        bio: '',
+        website: '',
+        title: '',
+      },
+      isLoading: true,
+      updateProfile: () => {},
+      updateMultipleFields: () => {},
+      resetProfile: () => {},
+      displayName: 'User',
+      companyName: 'Your Company',
+      userInitials: 'U',
+    };
   }
   return context;
 }

@@ -72,8 +72,12 @@ export default function DownloadPage() {
     if (showProgress) setDownloadProgress(0);
 
     try {
-      const response = await fetch(`${API_BASE}${path}`);
-      if (!response.ok) throw new Error('Download failed');
+      // All downloads go through /media endpoint (yt-dlp downloads to server)
+      const url = `${API_BASE}${path}`;
+      console.log('🔄 Downloading from:', url);
+      const response = await fetch(url);
+      console.log('📥 Response status:', response.status);
+      if (!response.ok) throw new Error(`Download failed: ${response.status} ${response.statusText}`);
 
       const contentLength = response.headers.get('content-length');
       const total = contentLength ? parseInt(contentLength, 10) : 0;
@@ -149,7 +153,8 @@ export default function DownloadPage() {
 
       refreshData();
     } catch (error) {
-      addToast(error.message || 'Could not download this link.', 'error');
+      console.error('❌ Download error:', error);
+      addToast(`Unable to download: ${error.message || 'Unknown error'}`, 'error');
     } finally {
       setIsDownloading(false);
     }

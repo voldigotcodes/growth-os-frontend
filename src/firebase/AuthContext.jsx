@@ -48,6 +48,13 @@ export const AuthProvider = ({ children }) => {
           console.log('🔐 User authenticated, setting up Firestore integration...');
           setCurrentUser(user);
 
+          // Persist authenticated identity for backend credit checks
+          try {
+            localStorage.setItem('growth-os-user-id', user.uid);
+          } catch (storageError) {
+            console.warn('⚠️ Unable to persist user ID to localStorage:', storageError);
+          }
+
           // Perform auto-migration from localStorage if needed
           try {
             setMigrationStatus('migrating');
@@ -147,6 +154,13 @@ export const AuthProvider = ({ children }) => {
           if (syncInterval) {
             clearInterval(syncInterval);
             syncInterval = null;
+          }
+
+          try {
+            localStorage.removeItem('growth-os-user-id');
+            localStorage.removeItem('growth-os-session-id');
+          } catch (storageError) {
+            console.warn('⚠️ Unable to clear stored user identity:', storageError);
           }
         }
       } catch (err) {

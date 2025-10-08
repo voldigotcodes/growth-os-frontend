@@ -30,15 +30,18 @@ function ContextMenu({
       }
     };
 
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') setIsOpen(false);
-      });
+      document.addEventListener('keydown', handleKeyDown);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
 

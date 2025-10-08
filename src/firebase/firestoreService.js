@@ -161,21 +161,42 @@ export const getUserSubscription = async (uid) => {
   }
 };
 
+// Helper to recursively remove undefined values
+const cleanObject = (obj) => {
+  if (obj === null || obj === undefined) return null;
+  if (typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(cleanObject);
+
+  const cleaned = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      cleaned[key] = cleanObject(value);
+    }
+  }
+  return cleaned;
+};
+
 export const updateUserSubscription = async (uid, updates) => {
   try {
     const subRef = doc(db, COLLECTIONS.USERS, uid, 'data', 'subscription');
 
+    // Remove undefined values to prevent Firestore errors
+    const cleanUpdates = cleanObject(updates);
+
     const updatedData = {
-      ...updates,
+      ...cleanUpdates,
       lastSyncedAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
+
+    console.log('📝 Updating Firestore subscription:', updatedData);
 
     // Use setDoc with merge to ensure document exists
     await setDoc(subRef, updatedData, { merge: true });
     return { error: null };
   } catch (error) {
-    console.error('Error updating user subscription:', error);
+    console.error('❌ Error updating user subscription:', error);
+    console.error('Failed data:', updates);
     return { error: error.message };
   }
 };
@@ -216,28 +237,28 @@ export const syncSubscriptionFromBackend = async (uid, apiBaseUrl = 'http://loca
     // Map backend quota data to Firestore subscription format
     const subscriptionData = {
       tier: quota.subscription_tier || 'starter',
-      status: 'active', // Backend should provide this
-      productId: null, // Backend should provide this if available
-      customerId: quota.stripe_customer_id || null,
-      subscriptionId: quota.stripe_subscription_id || null,
-      billingPeriod: quota.billing_period || null,
-      renewalDate: quota.current_period_end || null,
-      entitlements: quota.entitlements || ['basic_features'],
+      status: 'active',
+      productId: null,
+      customerId: null,
+      subscriptionId: null,
+      billingPeriod: null,
+      renewalDate: quota.monthly_reset_date || null,
+      entitlements: ['basic_features'],
       credits: {
-        transcription_minutes: quota.transcription_minutes,
-        tts_characters: quota.tts_characters,
-        workflow_runs: quota.workflow_runs,
-        downloads: quota.downloads,
-        ai_modifications: quota.ai_modifications,
-        storage_mb: quota.storage_mb
+        transcription_minutes: quota.credits_remaining?.transcription_minutes ?? 0,
+        tts_characters: quota.credits_remaining?.tts_characters ?? 0,
+        workflow_runs: quota.credits_remaining?.workflow_runs ?? 0,
+        downloads: quota.credits_remaining?.downloads ?? 0,
+        ai_modifications: quota.credits_remaining?.ai_modifications ?? 0,
+        storage_mb: quota.credits_remaining?.storage_mb ?? 0
       },
       usage: {
-        transcription_minutes: quota.usage?.transcription_minutes || 0,
-        tts_characters: quota.usage?.tts_characters || 0,
-        workflow_runs: quota.usage?.workflow_runs || 0,
-        downloads: quota.usage?.downloads || 0,
-        ai_modifications: quota.usage?.ai_modifications || 0,
-        storage_mb: quota.usage?.storage_mb || 0
+        transcription_minutes: quota.credits_used?.transcription_minutes ?? 0,
+        tts_characters: quota.credits_used?.tts_characters ?? 0,
+        workflow_runs: quota.credits_used?.workflow_runs ?? 0,
+        downloads: quota.credits_used?.downloads ?? 0,
+        ai_modifications: quota.credits_used?.ai_modifications ?? 0,
+        storage_mb: quota.credits_used?.storage_mb ?? 0
       }
     };
 

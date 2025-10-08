@@ -258,6 +258,16 @@ function WorkflowPageInner() {
     }
   }, [nodes, selectedNodeId]);
 
+  const handleDeleteSelection = useCallback(() => {
+    const selectedNodes = reactFlow.getNodes().filter((node) => node.selected);
+    const selectedEdges = reactFlow.getEdges().filter((edge) => edge.selected);
+    if (!selectedNodes.length && !selectedEdges.length) {
+      addToast('Select a node or connection to delete.', 'error');
+      return;
+    }
+    reactFlow.deleteElements({ nodes: selectedNodes, edges: selectedEdges });
+  }, [addToast, reactFlow]);
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key !== 'Delete' && event.key !== 'Backspace') {
@@ -275,18 +285,7 @@ function WorkflowPageInner() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges]);
-
-  const handleDeleteSelection = useCallback(() => {
-    const selectedNodes = reactFlow.getNodes().filter((node) => node.selected);
-    const selectedEdges = reactFlow.getEdges().filter((edge) => edge.selected);
-    if (!selectedNodes.length && !selectedEdges.length) {
-      addToast('Select a node or connection to delete.', 'error');
-      return;
-    }
-    reactFlow.deleteElements({ nodes: selectedNodes, edges: selectedEdges });
-  }, [addToast, reactFlow]);
+  }, [handleDeleteSelection]);
 
   const handleClearCanvas = useCallback(() => {
     setNodes([]);
