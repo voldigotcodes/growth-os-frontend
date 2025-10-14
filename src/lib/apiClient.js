@@ -105,7 +105,6 @@ export async function generateTTS({
   use_elevenlabs = false,
   title = '',
   tags = '',
-  toWorkspace = false,
 }) {
   const formData = new FormData();
   formData.append('text', text);
@@ -114,12 +113,28 @@ export async function generateTTS({
   formData.append('use_elevenlabs', String(use_elevenlabs));
   formData.append('title', title);
   formData.append('tags', tags);
-  formData.append('to_workspace', String(toWorkspace));
   const response = await fetch(`${API_BASE}/tts`, {
     method: 'POST',
     headers: getUserHeaders(),
     body: formData,
   });
+  return handleResponse(response);
+}
+
+export async function saveVoiceToWorkspace({ fileUrl, voice, provider = 'openai', title = '', tags = '' }) {
+  const formData = new FormData();
+  formData.append('audio_url', fileUrl);
+  formData.append('voice', voice);
+  formData.append('provider', provider);
+  formData.append('title', title);
+  formData.append('tags', tags);
+
+  const response = await fetch(`${API_BASE}/workspace/voices`, {
+    method: 'POST',
+    headers: getUserHeaders(),
+    body: formData,
+  });
+
   return handleResponse(response);
 }
 
@@ -311,6 +326,22 @@ export async function updateKnowledge(content) {
 
 export async function fetchVoices() {
   const response = await fetch(`${API_BASE}/voices`);
+  return handleResponse(response);
+}
+
+export async function fetchVoicePreview({ provider = 'openai', voice = 'alloy', text = '' }) {
+  const formData = new FormData();
+  formData.append('provider', provider);
+  formData.append('voice', voice);
+  if (text) {
+    formData.append('text', text);
+  }
+
+  const response = await fetch(`${API_BASE}/voices/preview`, {
+    method: 'POST',
+    headers: getUserHeaders(),
+    body: formData,
+  });
   return handleResponse(response);
 }
 

@@ -15,7 +15,29 @@ import {
 
 const getDisplayName = (item) => {
   if (!item) return '';
-  return item.title || item.url || (item.file_url && item.file_url.split('/').pop()) || 'Saved clip';
+  const display =
+    item.title ||
+    item.url ||
+    (item.file_url && item.file_url.split('/').pop()) ||
+    'Saved clip';
+  if (!display) {
+    return 'Saved clip';
+  }
+  try {
+    return decodeURIComponent(display);
+  } catch {
+    return display;
+  }
+};
+
+const DOWNLOAD_STORAGE_KEY = 'growth-os-download-state';
+const DEFAULT_DOWNLOAD_STATE = {
+  url: '',
+  format: 'mp4',
+  fileUrl: '',
+  lastTitle: '',
+  tags: '',
+  saveToWorkspace: true,
 };
 
 export default function DownloadPage() {
@@ -23,15 +45,51 @@ export default function DownloadPage() {
   const { addToast } = useToast();
   const isDark = theme === 'dark';
 
-  const [url, setUrl] = useState('');
-  const [format, setFormat] = useState('mp4');
+  const [persistentState, setPersistentState] = useState(() => {
+    if (typeof window === 'undefined') {
+      return DEFAULT_DOWNLOAD_STATE;
+    }
+    try {
+      const stored = window.sessionStorage.getItem(DOWNLOAD_STORAGE_KEY);
+      if (!stored) {
+        return DEFAULT_DOWNLOAD_STATE;
+      }
+      const parsed = JSON.parse(stored);
+      return { ...DEFAULT_DOWNLOAD_STATE, ...parsed };
+    } catch {
+      return DEFAULT_DOWNLOAD_STATE;
+    }
+  });
+
+  const updatePersistentState = (updater) => {
+    setPersistentState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+      return next;
+    });
+  };
+
+  const createPersistentSetter = (key) => (valueOrUpdater) => {
+    updatePersistentState((prev) => {
+      const nextValue = typeof valueOrUpdater === 'function' ? valueOrUpdater(prev[key]) : valueOrUpdater;
+      if (prev[key] === nextValue) {
+        return prev;
+      }
+      return { ...prev, [key]: nextValue };
+    });
+  };
+
+  const { url, format, fileUrl, lastTitle, tags, saveToWorkspace } = persistentState;
+
+  const setUrl = createPersistentSetter('url');
+  const setFormat = createPersistentSetter('format');
+  const setFileUrl = createPersistentSetter('fileUrl');
+  const setLastTitle = createPersistentSetter('lastTitle');
+  const setTags = createPersistentSetter('tags');
+  const setSaveToWorkspace = createPersistentSetter('saveToWorkspace');
+
   const [isDownloading, setIsDownloading] = useState(false);
-  const [fileUrl, setFileUrl] = useState('');
-  const [lastTitle, setLastTitle] = useState('');
-  const [tags, setTags] = useState('');
   const [savedItems, setSavedItems] = useState([]);
   const [historyItems, setHistoryItems] = useState([]);
-  const [saveToWorkspace, setSaveToWorkspace] = useState(true);
   const [downloadingFile, setDownloadingFile] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
@@ -51,6 +109,15 @@ export default function DownloadPage() {
     : 'liquid-button px-3 py-1 text-xs border-slate-200/70 text-slate-500 hover:text-slate-800';
 
   const resolvedFileUrl = fileUrl ? `${API_BASE}${fileUrl}` : '';
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(DOWNLOAD_STORAGE_KEY, JSON.stringify(persistentState));
+    } catch {
+      // ignore persistence errors
+    }
+  }, [persistentState]);
 
   const refreshData = async () => {
     try {
@@ -72,8 +139,9 @@ export default function DownloadPage() {
     if (showProgress) setDownloadProgress(0);
 
     try {
+      const safePath = encodeURI(path);
       // All downloads go through /media endpoint (yt-dlp downloads to server)
-      const url = `${API_BASE}${path}`;
+      const url = `${API_BASE}${safePath}`;
       console.log('🔄 Downloading from:', url);
       const response = await fetch(url);
       console.log('📥 Response status:', response.status);
@@ -85,6 +153,14 @@ export default function DownloadPage() {
 
       const reader = response.body?.getReader();
       const chunks = [];
+      const rawName = path.split('/').pop() || fallbackName;
+      const filename = (() => {
+        try {
+          return decodeURIComponent(rawName);
+        } catch {
+          return rawName;
+        }
+      })();
 
       if (reader && total > 0 && showProgress) {
         // Stream with progress tracking
@@ -99,7 +175,6 @@ export default function DownloadPage() {
         }
 
         const blob = new Blob(chunks);
-        const filename = path.split('/').pop() || fallbackName;
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = filename;
@@ -110,7 +185,6 @@ export default function DownloadPage() {
       } else {
         // Fallback without progress
         const blob = await response.blob();
-        const filename = path.split('/').pop() || fallbackName;
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = filename;

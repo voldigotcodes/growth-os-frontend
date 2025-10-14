@@ -3,26 +3,99 @@ import GlassCard from '../components/GlassCard.jsx';
 import OutputPanel from '../components/OutputPanel.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useToast } from '../components/ToastContext.jsx';
-import { API_BASE, fetchVoices, generateTTS } from '../lib/apiClient.js';
+import { API_BASE, fetchVoicePreview, fetchVoices, generateTTS, saveVoiceToWorkspace } from '../lib/apiClient.js';
+
+const DEFAULT_TTS_SCRIPT =
+  'Hook: 10-second swipe challenge that stacks proof upfront.\nBenefit: Watch how the serum fades breakouts in 72 hours.\nGuarantee: 30-day refund if your skin doesn’t respond.\nCTA: Tap the link to claim your launch bundle today.';
+const TTS_STORAGE_KEY = 'growth-os-tts-state';
+const DEFAULT_TTS_STATE = {
+  scriptText: DEFAULT_TTS_SCRIPT,
+  provider: 'openai',
+  voice: 'alloy',
+  draftMode: false,
+  voiceTitle: 'Voice Canvas',
+  voiceTags: 'Voiceover',
+  audioUrl: '',
+  lastRenderedScript: '',
+};
 
 export default function TTSPage() {
   const { theme } = useTheme();
   const { addToast } = useToast();
   const isDark = theme === 'dark';
 
-  const [scriptText, setScriptText] = useState(
-    'Hook: 10-second swipe challenge that stacks proof upfront.\nBenefit: Watch how the serum fades breakouts in 72 hours.\nGuarantee: 30-day refund if your skin doesn’t respond.\nCTA: Tap the link to claim your launch bundle today.'
-  );
+  const [persistentState, setPersistentState] = useState(() => {
+    if (typeof window === 'undefined') {
+      return DEFAULT_TTS_STATE;
+    }
+    try {
+      const stored = window.sessionStorage.getItem(TTS_STORAGE_KEY);
+      if (!stored) {
+        return DEFAULT_TTS_STATE;
+      }
+      const parsed = JSON.parse(stored);
+      return { ...DEFAULT_TTS_STATE, ...parsed };
+    } catch {
+      return DEFAULT_TTS_STATE;
+    }
+  });
+
+  const updatePersistentState = (updater) => {
+    setPersistentState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+      return next;
+    });
+  };
+
+  const createPersistentSetter = (key) => (valueOrUpdater) => {
+    updatePersistentState((prev) => {
+      const nextValue = typeof valueOrUpdater === 'function' ? valueOrUpdater(prev[key]) : valueOrUpdater;
+      if (prev[key] === nextValue) {
+        return prev;
+      }
+      return { ...prev, [key]: nextValue };
+    });
+  };
+
+  const {
+    scriptText,
+    provider,
+    voice,
+    draftMode,
+    voiceTitle,
+    voiceTags,
+    audioUrl,
+    lastRenderedScript,
+  } = persistentState;
+
+  const setScriptText = createPersistentSetter('scriptText');
+  const setProvider = createPersistentSetter('provider');
+  const setVoice = createPersistentSetter('voice');
+  const setDraftMode = createPersistentSetter('draftMode');
+  const setVoiceTitle = createPersistentSetter('voiceTitle');
+  const setVoiceTags = createPersistentSetter('voiceTags');
+  const setAudioUrl = createPersistentSetter('audioUrl');
+  const setLastRenderedScript = createPersistentSetter('lastRenderedScript');
+
   const [providers, setProviders] = useState([]);
-  const [provider, setProvider] = useState('openai');
-  const [voice, setVoice] = useState('alloy');
-  const [draftMode, setDraftMode] = useState(false);
-  const [audioUrl, setAudioUrl] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingVoices, setLoadingVoices] = useState(true);
-  const [voiceTitle, setVoiceTitle] = useState('Voice Canvas');
-  const [voiceTags, setVoiceTags] = useState('Voiceover');
-  const [saveVoiceToWorkspace, setSaveVoiceToWorkspace] = useState(true);
+  const [isSavingWorkspace, setIsSavingWorkspace] = useState(false);
+  const DEFAULT_PREVIEW_TEXT = 'A quick brown fox once ran a workflow in Growth OS, it made him 10 times faster.';
+  const [autoPreview, setAutoPreview] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem('growth-os-voice-autopreview') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewingVoice, setPreviewingVoice] = useState(null);
+  const previewCacheRef = useRef(new Map());
+  const previewAudioRef = useRef(null);
+  const hoverPreviewTimeoutRef = useRef(null);
+  const previewRequestRef = useRef({ token: null });
   const audioRef = useRef(null);
   const progressRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -30,6 +103,15 @@ export default function TTSPage() {
   const [currentTime, setCurrentTime] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [downloadingTrack, setDownloadingTrack] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(TTS_STORAGE_KEY, JSON.stringify(persistentState));
+    } catch {
+      // ignore persistence errors
+    }
+  }, [persistentState]);
 
   // Use standard theme text classes for proper contrast
   const labelText = 'theme-text-primary';
@@ -49,6 +131,13 @@ const accentEmerald = isDark
 const accentSky = isDark
   ? 'liquid-button border-sky-400/60 bg-sky-500/20 text-sky-100 hover:ring-sky-300/50'
     : 'liquid-button border-sky-300/80 bg-sky-100/80 text-sky-700 hover:ring-sky-300/60';
+  const voiceOptionBase = isDark
+    ? 'liquid-button px-3 py-2 text-xs border-white/15 text-white/70 hover:text-white'
+    : 'liquid-button px-3 py-2 text-xs border-slate-200/70 text-slate-600 hover:text-slate-900';
+  const voiceOptionActive = isDark
+    ? 'border-sky-400/70 bg-sky-500/25 text-sky-100 ring-1 ring-sky-300/60'
+    : 'border-sky-300/80 bg-sky-100/80 text-sky-700 ring-1 ring-sky-300/60';
+  const disabledButton = 'opacity-60 cursor-not-allowed';
 
   const resolvedAudioUrl = audioUrl ? `${API_BASE}${audioUrl}` : '';
 
@@ -59,8 +148,25 @@ const accentSky = isDark
         if (data?.providers?.length) {
           setProviders(data.providers);
           const defaultProvider = data.providers.find((entry) => entry.id === 'openai') || data.providers[0];
-          setProvider(defaultProvider.id);
-          setVoice(defaultProvider.voices?.[0] ?? 'alloy');
+          setPersistentState((prev) => {
+            let nextProvider = prev.provider;
+            if (!data.providers.some((entry) => entry.id === nextProvider)) {
+              nextProvider = defaultProvider?.id ?? 'openai';
+            }
+            const selectedProvider = data.providers.find((entry) => entry.id === nextProvider);
+            const availableVoices = selectedProvider?.voices ?? [];
+            let nextVoice = prev.voice;
+            if (!availableVoices.includes(nextVoice)) {
+              nextVoice = availableVoices[0] ?? defaultProvider?.voices?.[0] ?? 'alloy';
+            }
+            if (!nextVoice) {
+              nextVoice = 'alloy';
+            }
+            if (nextProvider === prev.provider && nextVoice === prev.voice) {
+              return prev;
+            }
+            return { ...prev, provider: nextProvider, voice: nextVoice };
+          });
         }
       } catch (error) {
         addToast(error.message || 'Unable to load voice providers.', 'error');
@@ -70,6 +176,29 @@ const accentSky = isDark
     };
 
     loadVoices();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('growth-os-voice-autopreview', String(autoPreview));
+    } catch {
+      // ignore storage errors
+    }
+  }, [autoPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (hoverPreviewTimeoutRef.current) {
+        clearTimeout(hoverPreviewTimeoutRef.current);
+        hoverPreviewTimeoutRef.current = null;
+      }
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
+      previewRequestRef.current.token = null;
+    };
   }, []);
 
   const currentProvider = useMemo(
@@ -202,13 +331,169 @@ const accentSky = isDark
     return openaiVoiceDescriptions[lower] ?? defaultMeta;
   }, [provider, voice]);
 
+  const normalizedScript = scriptText.trim();
+  const isAudioPresent = Boolean(audioUrl);
+  const isAudioFresh = isAudioPresent && normalizedScript === lastRenderedScript;
+  const primaryActionIsDownload = isAudioFresh;
+  const primaryActionBusy = primaryActionIsDownload ? downloadingTrack : isGenerating;
+  const primaryActionLabel = primaryActionIsDownload
+    ? primaryActionBusy
+      ? 'Preparing…'
+      : 'Download Voice Track'
+    : primaryActionBusy
+      ? 'Generating…'
+      : 'Generate Audio';
+  const primaryActionClass = primaryActionIsDownload ? accentEmerald : accentSky;
+  const primaryActionDisabled = primaryActionIsDownload
+    ? !isAudioPresent || downloadingTrack
+    : !normalizedScript || isGenerating || loadingVoices;
+
+  const previewKey = (providerId, voiceName) => `${providerId}:${voiceName}`;
+
+  const cancelHoverPreview = () => {
+    if (hoverPreviewTimeoutRef.current) {
+      clearTimeout(hoverPreviewTimeoutRef.current);
+      hoverPreviewTimeoutRef.current = null;
+    }
+  };
+
+  const stopPreviewPlayback = ({ resetState = true } = {}) => {
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      try {
+        previewAudioRef.current.src = '';
+      } catch {
+        // ignore browser-specific src errors
+      }
+      previewAudioRef.current = null;
+    }
+    if (resetState) {
+      setIsPreviewing(false);
+      setPreviewingVoice(null);
+    }
+    previewRequestRef.current.token = null;
+  };
+
+  const playVoicePreview = async (voiceName, providerOverride = provider) => {
+    if (!voiceName) return;
+    cancelHoverPreview();
+
+    const providerId = providerOverride || provider;
+    const requestVoice = providerId === 'openai' ? voiceName.toLowerCase() : voiceName;
+    const cacheIdentifier = previewKey(providerId, voiceName);
+
+    stopPreviewPlayback();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+
+    const requestToken = Symbol(`voice-preview:${cacheIdentifier}`);
+    previewRequestRef.current.token = requestToken;
+    setIsPreviewing(true);
+    setPreviewingVoice(cacheIdentifier);
+
+    try {
+      let audioPath = previewCacheRef.current.get(cacheIdentifier);
+
+      if (!audioPath) {
+        const response = await fetchVoicePreview({
+          provider: providerId,
+          voice: requestVoice,
+          text: DEFAULT_PREVIEW_TEXT,
+        });
+        audioPath = response?.audio_url;
+        if (!audioPath) {
+          throw new Error('Preview unavailable for this voice.');
+        }
+        previewCacheRef.current.set(cacheIdentifier, audioPath);
+
+        if (previewRequestRef.current.token !== requestToken) {
+          return;
+        }
+      }
+
+      if (previewRequestRef.current.token !== requestToken) {
+        return;
+      }
+
+      const resolvedUrl = audioPath.startsWith('http') ? audioPath : `${API_BASE}${audioPath}`;
+      const audioElement = new Audio(resolvedUrl);
+      previewAudioRef.current = audioElement;
+
+      const handleEnded = () => {
+        if (previewRequestRef.current.token !== requestToken) {
+          return;
+        }
+        previewAudioRef.current = null;
+        setIsPreviewing(false);
+        setPreviewingVoice(null);
+        previewRequestRef.current.token = null;
+        audioElement.removeEventListener('ended', handleEnded);
+        audioElement.removeEventListener('error', handleError);
+      };
+
+      const handleError = () => {
+        if (previewRequestRef.current.token !== requestToken) {
+          return;
+        }
+        previewAudioRef.current = null;
+        setIsPreviewing(false);
+        setPreviewingVoice(null);
+        addToast('Unable to play voice preview.', 'error');
+        previewRequestRef.current.token = null;
+        audioElement.removeEventListener('ended', handleEnded);
+        audioElement.removeEventListener('error', handleError);
+      };
+
+      audioElement.addEventListener('ended', handleEnded);
+      audioElement.addEventListener('error', handleError);
+
+      try {
+        await audioElement.play();
+      } catch (playError) {
+        handleError();
+      }
+    } catch (error) {
+      if (previewRequestRef.current.token === requestToken) {
+        stopPreviewPlayback();
+        addToast(error.message || 'Unable to generate voice preview.', 'error');
+      }
+    }
+  };
+
+  const scheduleHoverPreview = (voiceName, providerOverride = provider) => {
+    if (!autoPreview || !voiceName) return;
+    cancelHoverPreview();
+    hoverPreviewTimeoutRef.current = setTimeout(() => {
+      hoverPreviewTimeoutRef.current = null;
+      const cacheIdentifier = previewKey(providerOverride, voiceName);
+      if (isPreviewing && previewingVoice === cacheIdentifier) {
+        return;
+      }
+      playVoicePreview(voiceName, providerOverride);
+    }, 200);
+  };
+
+  const handlePreviewClick = () => {
+    const cacheIdentifier = previewKey(provider, voice);
+    if (isPreviewing && previewingVoice === cacheIdentifier) {
+      cancelHoverPreview();
+      stopPreviewPlayback();
+      return;
+    }
+    playVoicePreview(voice, provider);
+  };
+
   const handleGenerate = async () => {
-    if (!scriptText.trim()) {
+    if (!normalizedScript) {
       addToast('Script is empty—add your copy first.', 'error');
       return;
     }
+    stopPreviewPlayback();
     setIsGenerating(true);
     setAudioUrl('');
+    setLastRenderedScript('');
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
@@ -221,14 +506,22 @@ const accentSky = isDark
         use_elevenlabs: provider === 'elevenlabs',
         title: voiceTitle,
         tags: voiceTags,
-        toWorkspace: saveVoiceToWorkspace,
       });
       setAudioUrl(audio_url);
+      setLastRenderedScript(normalizedScript);
       addToast('Voice track generated.');
     } catch (error) {
       addToast(error.message || 'Could not generate audio.', 'error');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handlePrimaryAction = () => {
+    if (primaryActionIsDownload) {
+      handleDownloadTrack();
+    } else {
+      handleGenerate();
     }
   };
 
@@ -267,6 +560,8 @@ const accentSky = isDark
   }, [playbackRate]);
 
   const togglePlay = () => {
+    cancelHoverPreview();
+    stopPreviewPlayback();
     const audio = audioRef.current;
     if (!audio) return;
     if (audio.paused) {
@@ -320,6 +615,28 @@ const accentSky = isDark
     }
   };
 
+  const handleSaveVoiceToWorkspace = async () => {
+    if (!isAudioFresh || !audioUrl) {
+      addToast('Generate a fresh voice track before saving.', 'error');
+      return;
+    }
+    setIsSavingWorkspace(true);
+    try {
+      await saveVoiceToWorkspace({
+        fileUrl: audioUrl,
+        voice,
+        provider,
+        title: voiceTitle,
+        tags: voiceTags,
+      });
+      addToast('Voice track saved to Workspace Library.');
+    } catch (error) {
+      addToast(error.message || 'Unable to save voice track.', 'error');
+    } finally {
+      setIsSavingWorkspace(false);
+    }
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
       <header className="flex flex-wrap items-center justify-between gap-6">
@@ -329,7 +646,15 @@ const accentSky = isDark
             Generate natural voiceovers tuned for ecommerce pacing. Feed Growth OS your script and pick a voice that matches your brand energy.
           </p>
         </div>
-        <button type="button" className={neutralAction} onClick={() => setScriptText('')}>
+        <button
+          type="button"
+          className={neutralAction}
+          onClick={() => {
+            setScriptText('');
+            setAudioUrl('');
+            setLastRenderedScript('');
+          }}
+        >
           Clear Script
         </button>
       </header>
@@ -382,11 +707,14 @@ const accentSky = isDark
             actions={
               <button
                 type="button"
-                className={accentEmerald}
-                onClick={handleDownloadTrack}
-                disabled={!audioUrl || downloadingTrack}
+                className={[
+                  primaryActionClass,
+                  primaryActionDisabled ? disabledButton : '',
+                ].join(' ')}
+                onClick={handlePrimaryAction}
+                disabled={primaryActionDisabled}
               >
-                {downloadingTrack ? 'Preparing…' : 'Download Voice Track'}
+                {primaryActionLabel}
               </button>
             }
           >
@@ -495,14 +823,24 @@ const accentSky = isDark
                     />
                   </label>
             </div>
-            <label className="mt-3 inline-flex items-center gap-2 text-xs theme-text-muted">
-              <input
-                type="checkbox"
-                checked={saveVoiceToWorkspace}
-                onChange={(event) => setSaveVoiceToWorkspace(event.target.checked)}
-              />
-              Save new renders to Workspace Library
-            </label>
+            <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+              {!isAudioFresh && audioUrl && (
+                <span className="text-xs theme-text-muted">
+                  Script changed since last render — regenerate before saving.
+                </span>
+              )}
+              <button
+                type="button"
+                className={[
+                  accentFuchsia,
+                  (!isAudioFresh || isSavingWorkspace) ? disabledButton : '',
+                ].join(' ')}
+                onClick={handleSaveVoiceToWorkspace}
+                disabled={!isAudioFresh || isSavingWorkspace}
+              >
+                {isSavingWorkspace ? 'Saving…' : 'Save to Workspace'}
+              </button>
+            </div>
           </GlassCard>
 
           <OutputPanel activeTab="audio" />
@@ -526,10 +864,19 @@ const accentSky = isDark
                     value={provider}
                     onChange={(event) => {
                       const nextProviderId = event.target.value;
+                      if (nextProviderId === provider) return;
+                      cancelHoverPreview();
+                      stopPreviewPlayback();
                       setProvider(nextProviderId);
                       const nextProvider = providers.find((entry) => entry.id === nextProviderId);
                       if (nextProvider?.voices?.length) {
-                        setVoice(nextProvider.voices[0]);
+                        const nextVoice = nextProvider.voices[0];
+                        setVoice(nextVoice);
+                        if (autoPreview) {
+                          playVoicePreview(nextVoice, nextProviderId);
+                        }
+                      } else {
+                        setVoice('alloy');
                       }
                     }}
                   >
@@ -541,25 +888,80 @@ const accentSky = isDark
                   </select>
                 </label>
 
-                <label className={['space-y-3 text-sm', labelText].join(' ')}>
-                  <span>Voice Model</span>
-                  <select
-                    className={[
-                      'w-full rounded-md border px-4 py-3 text-sm focus:outline-none focus:ring-2',
-                      isDark
-                        ? 'border-white/10 bg-slate-900/40 text-white/80 focus:border-white/30 focus:ring-white/20'
-                        : 'border-slate-200/70 bg-white/85 text-slate-600 focus:border-sky-300 focus:ring-sky-200',
-                    ].join(' ')}
-                    value={voice}
-                    onChange={(event) => setVoice(event.target.value)}
-                  >
-                    {availableVoices.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className={['space-y-3 text-sm', labelText].join(' ')}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span>Voice Model</span>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <label className="inline-flex items-center gap-2 text-xs theme-text-muted">
+                        <input
+                          type="checkbox"
+                          checked={autoPreview}
+                          onChange={(event) => {
+                            const nextValue = event.target.checked;
+                            setAutoPreview(nextValue);
+                            if (!nextValue) {
+                              cancelHoverPreview();
+                              stopPreviewPlayback();
+                            }
+                          }}
+                        />
+                        Auto preview on hover
+                      </label>
+                      <button
+                        type="button"
+                        className={[
+                          accentSky,
+                          'px-3 py-2 text-xs',
+                          isPreviewing && previewingVoice === previewKey(provider, voice) ? 'opacity-80' : '',
+                        ].join(' ')}
+                        onClick={handlePreviewClick}
+                        disabled={!voice || loadingVoices}
+                      >
+                        {isPreviewing && previewingVoice === previewKey(provider, voice) ? 'Stop Preview' : 'Preview Voice'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Available voices">
+                    {availableVoices.map((option) => {
+                      const cacheIdentifier = previewKey(provider, option);
+                      const isActive = option === voice;
+                      const isVoicePreviewing = isPreviewing && previewingVoice === cacheIdentifier;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          className={[
+                            voiceOptionBase,
+                            isActive ? voiceOptionActive : '',
+                            isVoicePreviewing ? 'animate-pulse' : '',
+                          ].join(' ').trim()}
+                          aria-pressed={isActive}
+                          aria-label={`Select ${option} voice`}
+                          onClick={() => {
+                            cancelHoverPreview();
+                            stopPreviewPlayback();
+                            if (voice !== option) {
+                              setVoice(option);
+                              if (autoPreview) {
+                                playVoicePreview(option, provider);
+                              }
+                            } else if (autoPreview) {
+                              playVoicePreview(option, provider);
+                            }
+                          }}
+                          onMouseEnter={() => scheduleHoverPreview(option, provider)}
+                          onMouseLeave={cancelHoverPreview}
+                          onFocus={() => scheduleHoverPreview(option, provider)}
+                          onBlur={cancelHoverPreview}
+                        >
+                          <span>{option}</span>
+                          {isVoicePreviewing && <span className="ml-2 text-[10px] uppercase tracking-[0.3em]">Previewing</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs theme-text-muted">Preview text: “{DEFAULT_PREVIEW_TEXT}”</p>
+                </div>
               </>
             )}
 

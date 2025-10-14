@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import GlassCard from '../components/GlassCard.jsx';
 import OutputPanel from '../components/OutputPanel.jsx';
 import FileUpload from '../components/FileUpload.jsx';
@@ -6,19 +6,73 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { useToast } from '../components/ToastContext.jsx';
 import { modifyTranscript, saveWorkspaceScript, transcribeFile } from '../lib/apiClient.js';
 
+const TRANSCRIBE_STORAGE_KEY = 'growth-os-transcribe-state';
+const DEFAULT_TRANSCRIBE_STATE = {
+  transcript: '',
+  instruction: 'Rewrite for TikTok hook with urgency and social proof.',
+  modifiedText: '',
+  scriptTitle: '',
+};
+
 export default function TranscribePage() {
   const { theme } = useTheme();
   const { addToast } = useToast();
   const isDark = theme === 'dark';
 
   const hiddenInputRef = useRef(null);
+
+  const [persistentState, setPersistentState] = useState(() => {
+    if (typeof window === 'undefined') {
+      return DEFAULT_TRANSCRIBE_STATE;
+    }
+    try {
+      const stored = window.sessionStorage.getItem(TRANSCRIBE_STORAGE_KEY);
+      if (!stored) {
+        return DEFAULT_TRANSCRIBE_STATE;
+      }
+      const parsed = JSON.parse(stored);
+      return { ...DEFAULT_TRANSCRIBE_STATE, ...parsed };
+    } catch {
+      return DEFAULT_TRANSCRIBE_STATE;
+    }
+  });
+
+  const updatePersistentState = (updater) => {
+    setPersistentState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+      return next;
+    });
+  };
+
+  const createPersistentSetter = (key) => (valueOrUpdater) => {
+    updatePersistentState((prev) => {
+      const nextValue = typeof valueOrUpdater === 'function' ? valueOrUpdater(prev[key]) : valueOrUpdater;
+      if (prev[key] === nextValue) {
+        return prev;
+      }
+      return { ...prev, [key]: nextValue };
+    });
+  };
+
+  const { transcript, instruction, modifiedText, scriptTitle } = persistentState;
+
+  const setTranscript = createPersistentSetter('transcript');
+  const setInstruction = createPersistentSetter('instruction');
+  const setModifiedText = createPersistentSetter('modifiedText');
+  const setScriptTitle = createPersistentSetter('scriptTitle');
+
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [instruction, setInstruction] = useState('Rewrite for TikTok hook with urgency and social proof.');
-  const [modifiedText, setModifiedText] = useState('');
   const [isModifying, setIsModifying] = useState(false);
-  const [scriptTitle, setScriptTitle] = useState('');
   const [isSavingScript, setIsSavingScript] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(TRANSCRIBE_STORAGE_KEY, JSON.stringify(persistentState));
+    } catch {
+      // ignore persistence errors
+    }
+  }, [persistentState]);
 
   // Use standard theme text classes for proper contrast
   const subtleText = 'theme-text-muted';
@@ -38,6 +92,7 @@ export default function TranscribePage() {
   const handleFile = async (file) => {
     setIsTranscribing(true);
     setModifiedText('');
+    setScriptTitle('');
     try {
       const { transcript: result } = await transcribeFile(file);
       setTranscript(result);

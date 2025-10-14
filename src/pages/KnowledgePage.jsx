@@ -28,6 +28,13 @@ const defaultState = {
 
 const cloneState = (value) => JSON.parse(JSON.stringify(value));
 
+const KNOWLEDGE_STORAGE_KEY = 'growth-os-knowledge-state';
+const DEFAULT_KNOWLEDGE_SESSION = {
+  formState: cloneState(defaultState),
+  importText: '',
+  showImport: false,
+};
+
 function cleanBullet(line) {
   return line.replace(/^[-•\t\s]+/, '').trim();
 }
@@ -375,30 +382,99 @@ export default function KnowledgePage() {
   const { addToast } = useToast();
   const isDark = theme === 'dark';
 
-  const [formState, setFormState] = useState(defaultState);
-  const [initialState, setInitialState] = useState(defaultState);
+  const [sessionState, setSessionState] = useState(() => {
+    if (typeof window === 'undefined') {
+      return DEFAULT_KNOWLEDGE_SESSION;
+    }
+    try {
+      const stored = window.sessionStorage.getItem(KNOWLEDGE_STORAGE_KEY);
+      if (!stored) {
+        return DEFAULT_KNOWLEDGE_SESSION;
+      }
+      const parsed = JSON.parse(stored);
+      return {
+        formState: cloneState(parsed.formState ?? defaultState),
+        importText: parsed.importText ?? '',
+        showImport: Boolean(parsed.showImport),
+      };
+    } catch {
+      return DEFAULT_KNOWLEDGE_SESSION;
+    }
+  });
+
+  const updateSessionState = (updater) => {
+    setSessionState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+      return next;
+    });
+  };
+
+  const createSessionSetter = (key) => (valueOrUpdater) => {
+    updateSessionState((prev) => {
+      const currentValue = prev[key];
+      const nextValue =
+        typeof valueOrUpdater === 'function' ? valueOrUpdater(currentValue) : valueOrUpdater;
+      if (key === 'formState') {
+        const serializedCurrent = JSON.stringify(currentValue);
+        const serializedNext = JSON.stringify(nextValue);
+        if (serializedCurrent === serializedNext) {
+          return prev;
+        }
+        return { ...prev, [key]: cloneState(nextValue) };
+      }
+      if (currentValue === nextValue) {
+        return prev;
+      }
+      return { ...prev, [key]: nextValue };
+    });
+  };
+
+  const formState = sessionState.formState;
+  const importText = sessionState.importText;
+  const showImport = sessionState.showImport;
+
+  const setFormState = createSessionSetter('formState');
+  const setImportText = createSessionSetter('importText');
+  const setShowImport = createSessionSetter('showImport');
+
+  const [initialState, setInitialState] = useState(cloneState(formState));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showImport, setShowImport] = useState(false);
-  const [importText, setImportText] = useState('');
 
   useEffect(() => {
     const load = async () => {
       try {
         const data = await fetchKnowledge();
         const parsed = data?.content ? parseKnowledge(data.content) : defaultState;
-        setFormState(cloneState(parsed));
-        setInitialState(cloneState(parsed));
+        const cloned = cloneState(parsed);
+        setFormState(cloned);
+        setInitialState(cloneState(cloned));
       } catch (error) {
         addToast(error.message || 'Unable to load knowledge base.', 'error');
-        setFormState(defaultState);
-        setInitialState(defaultState);
+        setFormState(cloneState(defaultState));
+        setInitialState(cloneState(defaultState));
       } finally {
         setLoading(false);
       }
     };
     load();
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(
+        KNOWLEDGE_STORAGE_KEY,
+        JSON.stringify({
+          formState,
+          importText,
+          showImport,
+        })
+      );
+    } catch {
+      // ignore persistence errors
+    }
+  }, [formState, importText, showImport]);
 
   const hasChanges = useMemo(
     () => JSON.stringify(formState) !== JSON.stringify(initialState),
