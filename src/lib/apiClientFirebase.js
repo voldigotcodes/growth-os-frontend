@@ -331,10 +331,15 @@ export async function fetchKnowledge() {
   return handleResponse(response);
 }
 
-export async function updateKnowledge(content) {
+export async function updateKnowledge({ content, structured = null }) {
+  const payload = { content };
+  if (structured && typeof structured === 'object') {
+    payload.structured = structured;
+  }
   const response = await makeRequest(`${API_BASE}/knowledge`, {
     method: 'POST',
-    body: JSON.stringify({ content })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
   });
   return handleResponse(response);
 }

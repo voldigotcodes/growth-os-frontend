@@ -445,14 +445,34 @@ export default function KnowledgePage() {
     const load = async () => {
       try {
         const data = await fetchKnowledge();
-        const parsed = data?.content ? parseKnowledge(data.content) : defaultState;
-        const cloned = cloneState(parsed);
-        setFormState(cloned);
-        setInitialState(cloneState(cloned));
+        const rawContent = data?.content ?? '';
+        const structured = data?.structured;
+
+        let nextState;
+        try {
+          if (structured && typeof structured === 'object') {
+            nextState = {
+              ...cloneState(defaultState),
+              ...structured,
+            };
+          } else if (rawContent.trim()) {
+            nextState = cloneState(parseKnowledge(rawContent));
+          } else {
+            nextState = cloneState(defaultState);
+          }
+        } catch (parseError) {
+          console.warn('Failed to parse stored knowledge, falling back to defaults:', parseError);
+          nextState = cloneState(defaultState);
+        }
+
+        setFormState(nextState);
+        setInitialState(cloneState(nextState));
+        setImportText(rawContent || buildKnowledge(nextState));
       } catch (error) {
         addToast(error.message || 'Unable to load knowledge base.', 'error');
         setFormState(cloneState(defaultState));
         setInitialState(cloneState(defaultState));
+        setImportText(buildKnowledge(defaultState));
       } finally {
         setLoading(false);
       }
@@ -493,8 +513,11 @@ export default function KnowledgePage() {
     if (!hasChanges || saving) return;
     setSaving(true);
     try {
-      await updateKnowledge(buildKnowledge(formState));
+      const structuredPayload = cloneState(formState);
+      const content = buildKnowledge(structuredPayload);
+      await updateKnowledge({ content, structured: structuredPayload });
       setInitialState(cloneState(formState));
+      setImportText(content);
       addToast('General knowledge saved.');
     } catch (error) {
       addToast(error.message || 'Failed to save knowledge.', 'error');
@@ -505,6 +528,7 @@ export default function KnowledgePage() {
 
   const handleCancel = () => {
     setFormState(cloneState(initialState));
+    setImportText(buildKnowledge(initialState));
     addToast('Changes reverted.');
   };
 
