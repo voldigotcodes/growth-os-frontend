@@ -3,6 +3,18 @@
 This repository contains the Growth OS frontend application, built with React, Vite, Tailwind CSS, and Firebase.
 
 > The backend services are maintained in a separate private repository and are not included here.
+## What is Growth OS?
+
+Growth OS is a productivity platform for creators and small teams that turns media and ideas into repeatable workflows. Key user-facing capabilities include:
+
+- Transcribing audio and video into editable text (speech-to-text).
+- Transforming and refining text with server-side processing (edits, summarization, formatting).
+- Generating natural-sounding audio from text (text-to-speech) for previews and exports.
+- Building, visualizing and running custom workflows (visual workflow editor powered by React Flow).
+- Persisting workspaces, workflows and user preferences in Firebase Firestore.
+- Managing subscriptions and payments via RevenueCat/Stripe integration and tracking usage credits.
+
+The frontend handles UI, authentication, workflow composition, and making requests to backend processing endpoints; the backend performs heavy lifting (speech, TTS, transformation, storage, billing).
 
 ## Project Overview
 
