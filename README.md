@@ -4,6 +4,34 @@ This repository contains the Growth OS frontend application, built with React, V
 
 > The backend services are maintained in a separate private repository and are not included here.
 
+## Project Overview
+
+Growth OS is a full-stack application composed of a public frontend (this repo) and a private backend service. The two parts work together to provide an end-to-end experience for users:
+
+- **Frontend (this repo):** Fast, responsive React app (Vite + Tailwind) handling UI, authentication (Firebase Auth), workflow visualization, and calls to backend APIs. Primary source files live under `frontend/src/`.
+- **Backend (private repo):** FastAPI (Uvicorn) services that implement the application API surface (transcription, text modification, TTS, workspace & workflows management, analytics, credits, etc.), subscription and payment logic (RevenueCat, Stripe), and server-side Firestore access via the `firebase-admin` SDK.
+- **Data & integrations:** Firebase Firestore is used for user profiles, workspace and workflow persistence; RevenueCat and Stripe manage subscriptions/payments; object/audio storage and third-party services (speech, TTS) are orchestrated by the backend.
+
+How they interact:
+
+- The frontend calls the backend API configured via `VITE_API_BASE_URL` (set in `frontend/.env`). Common API endpoints used by the UI are implemented in `frontend/src/lib/apiClient.js`.
+- Backend endpoints validate Firebase ID tokens, perform server-side processing, and update Firestore and third-party services as needed.
+
+Running locally:
+
+- Start the backend (private repository) and ensure its `VITE_API_BASE_URL` (or equivalent) is reachable at the value used in the frontend env.
+- Then run the frontend development server:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Notes for contributors:
+
+- This README focuses on the frontend; backend sources and deployment workflows are maintained in a private repository. Coordinate API or schema changes with the backend team and update `frontend/src/lib/apiClient.js` and the env docs when contracts change.
+
 ## What’s included
 
 - `frontend/` - React app with Vite, Tailwind, Firebase integration, RevenueCat readiness, and glass-style UI components.
