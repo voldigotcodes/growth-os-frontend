@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { downloadFile, generateOutputFilename, isDownloadableOutput } from '../../utils/downloadHelpers.js';
+import { useEffect, useState } from 'react';
+import { downloadFile, generateOutputFilename, getDownloadableOutputs, getOutputUrl } from '../../utils/downloadHelpers.js';
 import { useToast } from '../ToastContext.jsx';
 
 function OutputDownloadModal({ open, onClose, outputs = [] }) {
@@ -10,6 +10,9 @@ function OutputDownloadModal({ open, onClose, outputs = [] }) {
   // Debug mode
   const debugMode = new URLSearchParams(window.location.search).has('debug') ||
                     localStorage.getItem('workflow-debug') === 'true';
+
+  const validOutputs = getDownloadableOutputs(outputs);
+  useEffect(() => { setSelectedOutputs(new Set()); }, [open, outputs]);
 
   if (!open) return null;
 
@@ -24,10 +27,10 @@ function OutputDownloadModal({ open, onClose, outputs = [] }) {
   };
 
   const handleSelectAll = () => {
-    if (selectedOutputs.size === outputs.length) {
+    if (selectedOutputs.size === validOutputs.length) {
       setSelectedOutputs(new Set());
     } else {
-      setSelectedOutputs(new Set(outputs.map((_, index) => index)));
+      setSelectedOutputs(new Set(validOutputs.map((_, index) => index)));
     }
   };
 
@@ -49,13 +52,13 @@ function OutputDownloadModal({ open, onClose, outputs = [] }) {
 
     setIsDownloading(true);
     try {
-      const selectedItems = Array.from(selectedOutputs).map(index => outputs[index]);
+      const selectedItems = Array.from(selectedOutputs).map(index => validOutputs[index]).filter(Boolean);
 
       let successCount = 0;
       let errorCount = 0;
 
       for (const output of selectedItems) {
-        const url = output?.url ?? output?.value?.url;
+        const url = getOutputUrl(output);
         if (url) {
           try {
             const filename = generateOutputFilename(output);
@@ -79,7 +82,7 @@ function OutputDownloadModal({ open, onClose, outputs = [] }) {
         addToast(`All ${errorCount} downloads failed`, 'error');
       }
 
-      onClose();
+      if (successCount > 0 && errorCount === 0) onClose();
     } catch (error) {
       console.error('Download failed:', error);
     } finally {
@@ -93,8 +96,8 @@ function OutputDownloadModal({ open, onClose, outputs = [] }) {
       let successCount = 0;
       let errorCount = 0;
 
-      for (const output of outputs) {
-        const url = output?.url ?? output?.value?.url;
+      for (const output of validOutputs) {
+        const url = getOutputUrl(output);
         if (url) {
           try {
             const filename = generateOutputFilename(output);
@@ -118,25 +121,13 @@ function OutputDownloadModal({ open, onClose, outputs = [] }) {
         addToast(`All ${errorCount} downloads failed`, 'error');
       }
 
-      onClose();
+      if (successCount > 0 && errorCount === 0) onClose();
     } catch (error) {
       console.error('Download failed:', error);
     } finally {
       setIsDownloading(false);
     }
   };
-
-  const getFileExtension = (url) => {
-    try {
-      const pathname = new URL(url).pathname;
-      const extension = pathname.split('.').pop();
-      return extension && extension !== pathname ? `.${extension}` : '';
-    } catch {
-      return '';
-    }
-  };
-
-  const validOutputs = outputs.filter(isDownloadableOutput);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xl">
@@ -176,7 +167,7 @@ function OutputDownloadModal({ open, onClose, outputs = [] }) {
 
               <div className="mb-6 max-h-60 space-y-2 overflow-y-auto">
                 {validOutputs.map((output, index) => {
-                  const url = output?.url ?? output?.value?.url;
+                  const url = getOutputUrl(output);
                   const label = output?.label ?? `${output.node_id} · ${output.port_id}`;
                   const filename = generateOutputFilename(output);
                   const isSelected = selectedOutputs.has(index);

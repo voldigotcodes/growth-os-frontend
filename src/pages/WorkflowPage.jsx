@@ -693,58 +693,11 @@ function WorkflowPageInner() {
         return;
       }
 
-      // Check if we're already in the run summary (summary is open and matches this entry)
-      const isInRunSummary = summaryOpen && runSummary && (
-        runSummary === entry.summary ||
-        runSummary.workflow?.id === entry.workflowId ||
-        runSummary.id === entry.id
-      );
-
-      if (isInRunSummary) {
-        // If already in run summary, directly download all outputs
-        outputs.forEach(async (output) => {
-          const url = output?.url ?? output?.value?.url;
-          if (url) {
-            try {
-              const response = await fetch(url);
-              const blob = await response.blob();
-              const downloadUrl = window.URL.createObjectURL(blob);
-
-              const filename = output?.filename ??
-                              output?.label ??
-                              `output-${output.node_id}-${output.port_id}${getFileExtension(url)}`;
-
-              const link = document.createElement('a');
-              link.href = downloadUrl;
-              link.download = filename;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-
-              window.URL.revokeObjectURL(downloadUrl);
-            } catch (error) {
-              console.error('Download failed:', error);
-            }
-          }
-        });
-      } else {
-        // Show modal for output selection
-        setOutputModalData(outputs);
-        setOutputModalOpen(true);
-      }
+      setOutputModalData(outputs);
+      setOutputModalOpen(true);
     },
-    [addToast, handleHistoryEntrySelect, summaryOpen, runSummary]
+    [addToast, handleHistoryEntrySelect]
   );
-
-  const getFileExtension = useCallback((url) => {
-    try {
-      const pathname = new URL(url).pathname;
-      const extension = pathname.split('.').pop();
-      return extension && extension !== pathname ? `.${extension}` : '';
-    } catch {
-      return '';
-    }
-  }, []);
 
   const handleHistoryRerun = useCallback(
     (entry) => {

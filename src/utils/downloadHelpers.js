@@ -4,7 +4,10 @@
  */
 
 import { auth } from '../firebase/firebaseConfig.js';
-import { logActivity, updateOutputDownload } from '../firebase/firestoreService.js';
+import { logActivity } from '../firebase/firestoreService.js';
+import { API_BASE } from '../lib/apiClient.js';
+import { fetchDownloadBlob, generateOutputFilename, getFileExtension, getOutputUrl, isDownloadableOutput, resolveDownloadUrl } from './workflowOutputs.js';
+export { generateOutputFilename, getFileExtension, getOutputUrl, isDownloadableOutput, getDownloadableOutputs } from './workflowOutputs.js';
 
 // Get user headers for authenticated downloads using Firebase Auth
 async function getAuthHeaders() {
@@ -18,14 +21,12 @@ async function getAuthHeaders() {
     const idToken = await user.getIdToken();
     return {
       'Authorization': `Bearer ${idToken}`,
-      'X-User-ID': user.uid,
-      'Content-Type': 'application/json'
+      'X-User-ID': user.uid
     };
   } catch (error) {
     console.error('Failed to get auth token:', error);
     return {
-      'X-User-ID': user.uid,
-      'Content-Type': 'application/json'
+      'X-User-ID': user.uid
     };
   }
 }
@@ -55,7 +56,9 @@ export async function downloadFile(url, filename, options = {}) {
 
     // Prepare headers
     const headers = {};
-    if (includeAuth) {
+    const resolvedUrl = resolveDownloadUrl(url, API_BASE);
+    const isBackend = new URL(resolvedUrl, window.location.origin).origin === new URL(API_BASE, window.location.origin).origin;
+    if (includeAuth && isBackend) {
       try {
         Object.assign(headers, await getAuthHeaders());
       } catch (authError) {
@@ -66,61 +69,7 @@ export async function downloadFile(url, filename, options = {}) {
       }
     }
 
-    if (debug) {
-      console.log('Request headers:', headers);
-    }
-
-    // Make the request
-    const response = await fetch(url, { headers });
-
-    if (debug) {
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-      console.log('Content-Type:', response.headers.get('Content-Type'));
-      console.log('Content-Length:', response.headers.get('Content-Length'));
-    }
-
-    if (!response.ok) {
-      // Check if we got an HTML error page
-      const contentType = response.headers.get('Content-Type') || '';
-      if (contentType.includes('text/html')) {
-        const htmlContent = await response.text();
-        if (debug) {
-          console.log('HTML Error Response:', htmlContent.substring(0, 500));
-        }
-
-        // Try to extract meaningful error from HTML
-        const titleMatch = htmlContent.match(/<title[^>]*>([^<]+)</i);
-        const errorTitle = titleMatch ? titleMatch[1] : 'Unknown error';
-
-        throw new Error(`Server returned HTML error page: ${errorTitle} (Status: ${response.status})`);
-      }
-
-      throw new Error(`Download failed: ${response.status} ${response.statusText}`);
-    }
-
-    // Check content type
-    const contentType = response.headers.get('Content-Type') || '';
-    if (contentType.includes('text/html') && !filename.endsWith('.html')) {
-      if (debug) {
-        const htmlPreview = await response.clone().text();
-        console.log('WARNING: Got HTML instead of expected file type');
-        console.log('HTML preview:', htmlPreview.substring(0, 500));
-      }
-      throw new Error('Server returned HTML page instead of file. This usually means the URL is incorrect or requires authentication.');
-    }
-
-    // Create blob from response
-    const blob = await response.blob();
-
-    if (debug) {
-      console.log('Blob created:', blob.type, blob.size, 'bytes');
-    }
-
-    // Validate blob
-    if (!blob || blob.size === 0) {
-      throw new Error('Downloaded file is empty');
-    }
+    const blob = await fetchDownloadBlob(url, API_BASE, { headers, onProgress });
 
     // Create download URL and trigger download
     const downloadUrl = window.URL.createObjectURL(blob);
@@ -165,7 +114,7 @@ export async function downloadFile(url, filename, options = {}) {
 
     } finally {
       // Clean up the blob URL
-      window.URL.revokeObjectURL(downloadUrl);
+      setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
     }
 
   } catch (error) {
@@ -179,48 +128,6 @@ export async function downloadFile(url, filename, options = {}) {
 }
 
 /**
- * Get file extension from URL
- */
-export function getFileExtension(url) {
-  try {
-    const pathname = new URL(url).pathname;
-    const extension = pathname.split('.').pop();
-    return extension && extension !== pathname ? `.${extension}` : '';
-  } catch {
-    return '';
-  }
-}
-
-/**
- * Generate filename for output
- */
-export function generateOutputFilename(output) {
-  // Use provided filename first
-  if (output?.filename) {
-    return output.filename;
-  }
-
-  // Use label if available
-  if (output?.label) {
-  const extension = getFileExtension(output?.file_url || output?.url || output?.value?.url || '');    return `${output.label}${extension}`;
-  }
-
-  // Generate from node/port info
-  const nodeId = output?.node_id ? output.node_id.replace(/^node-/, '') : 'output';
-  const portId = output?.port_id || 'result';
-const extension = getFileExtension(output?.file_url || output?.url || output?.value?.url || '');
-  return `${nodeId}-${portId}${extension}`;
-}
-
-/**
- * Validate output has downloadable URL
- */
-export function isDownloadableOutput(output) {
-  const url = output?.file_url || output?.url || output?.value?.url;
-return url && typeof url === 'string' && url.trim().length > 0;
-}
-
-/**
  * Enhanced download with toast notifications
  */
 export async function downloadOutputWithNotification(output, addToast, debug = false) {
@@ -229,7 +136,8 @@ export async function downloadOutputWithNotification(output, addToast, debug = f
     return;
   }
 
-const url = output?.file_url || output?.url || output?.value?.url;  const filename = generateOutputFilename(output);
+  const url = getOutputUrl(output);
+  const filename = generateOutputFilename(output);
 
   try {
     if (debug) {

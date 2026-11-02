@@ -1,5 +1,5 @@
 import { Fragment, memo, useMemo } from 'react';
-import { downloadOutputWithNotification, isDownloadableOutput, generateOutputFilename } from '../../utils/downloadHelpers.js';
+import { downloadOutputWithNotification, isDownloadableOutput, generateOutputFilename, getOutputUrl } from '../../utils/downloadHelpers.js';
 import { useToast } from '../ToastContext.jsx';
 
 function statusBadge(status) {
@@ -35,12 +35,12 @@ function normalizeCredits(value) {
 function RunSummaryDrawer({ open, onClose, summary }) {
   const { addToast } = useToast();
 
-  if (!open) return null;
-
   const steps = summary?.node_trace ?? [];
   const edges = summary?.edge_trace ?? [];
   const creditsUsed = useMemo(() => normalizeCredits(summary?.credits_info?.consumed), [summary]);
   const creditsRemaining = useMemo(() => normalizeCredits(summary?.credits_info?.remaining), [summary]);
+
+  if (!open) return null;
 
   // Debug mode toggle (can be controlled via URL param or localStorage)
   const debugMode = new URLSearchParams(window.location.search).has('debug') ||
@@ -157,7 +157,7 @@ function RunSummaryDrawer({ open, onClose, summary }) {
             </div>
             <ul className="space-y-2">
               {summary.outputs.map((output) => {
-                const url = output?.url ?? output?.value?.url;
+                const url = getOutputUrl(output);
                 const label = output?.label ?? `${output.node_id} · ${output.port_id}`;
                 const filename = generateOutputFilename(output);
                 const hasValidUrl = isDownloadableOutput(output);
