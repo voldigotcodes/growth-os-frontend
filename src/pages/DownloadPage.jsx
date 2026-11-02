@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import GlassCard from '../components/GlassCard.jsx';
 import OutputPanel from '../components/OutputPanel.jsx';
+import { readDownloadBlob } from '../utils/mediaDownloads.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useToast } from '../components/ToastContext.jsx';
 import {
@@ -36,6 +37,8 @@ const DEFAULT_DOWNLOAD_STATE = {
   format: 'mp4',
   fileUrl: '',
   lastTitle: '',
+  downloadedUrl: '',
+  downloadedFormat: '',
   tags: '',
   saveToWorkspace: true,
 };
@@ -55,7 +58,12 @@ export default function DownloadPage() {
         return DEFAULT_DOWNLOAD_STATE;
       }
       const parsed = JSON.parse(stored);
-      return { ...DEFAULT_DOWNLOAD_STATE, ...parsed };
+      return {
+        ...DEFAULT_DOWNLOAD_STATE,
+        ...parsed,
+        downloadedUrl: parsed.downloadedUrl || (parsed.fileUrl ? parsed.url : ''),
+        downloadedFormat: parsed.downloadedFormat || (parsed.fileUrl?.endsWith('.mp3') ? 'mp3' : 'mp4'),
+      };
     } catch {
       return DEFAULT_DOWNLOAD_STATE;
     }
@@ -78,7 +86,7 @@ export default function DownloadPage() {
     });
   };
 
-  const { url, format, fileUrl, lastTitle, tags, saveToWorkspace } = persistentState;
+  const { url, format, fileUrl, lastTitle, tags, saveToWorkspace, downloadedUrl, downloadedFormat } = persistentState;
 
   const setUrl = createPersistentSetter('url');
   const setFormat = createPersistentSetter('format');
@@ -139,20 +147,14 @@ export default function DownloadPage() {
     if (showProgress) setDownloadProgress(0);
 
     try {
-      const safePath = encodeURI(path);
+      const safePath = path;
       // All downloads go through /media endpoint (yt-dlp downloads to server)
-      const url = `${API_BASE}${safePath}`;
+      const url = safePath.startsWith('http') ? safePath : `${API_BASE}${safePath}`;
       console.log('🔄 Downloading from:', url);
       const response = await fetch(url);
       console.log('📥 Response status:', response.status);
       if (!response.ok) throw new Error(`Download failed: ${response.status} ${response.statusText}`);
 
-      const contentLength = response.headers.get('content-length');
-      const total = contentLength ? parseInt(contentLength, 10) : 0;
-      let loaded = 0;
-
-      const reader = response.body?.getReader();
-      const chunks = [];
       const rawName = path.split('/').pop() || fallbackName;
       const filename = (() => {
         try {
@@ -162,44 +164,24 @@ export default function DownloadPage() {
         }
       })();
 
-      if (reader && total > 0 && showProgress) {
-        // Stream with progress tracking
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          chunks.push(value);
-          loaded += value.length;
-          const progress = Math.round((loaded / total) * 100);
-          setDownloadProgress(progress);
-        }
-
-        const blob = new Blob(chunks);
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-      } else {
-        // Fallback without progress
-        const blob = await response.blob();
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-      }
+      const blob = await readDownloadBlob(response, showProgress ? setDownloadProgress : undefined);
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      // Give the browser time to begin the download before releasing the URL.
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 
       if (showProgress) {
         setDownloadProgress(100);
         setTimeout(() => setDownloadProgress(0), 2000); // Reset after 2 seconds
       }
     } catch (error) {
-      addToast('Unable to download file.', 'error');
+      if (showProgress) throw error;
+      addToast(error.message || 'Unable to download file.', 'error');
     } finally {
       setDownloadingFile(false);
     }
@@ -217,14 +199,18 @@ export default function DownloadPage() {
     setIsDownloading(true);
     setFileUrl('');
     try {
-      const { file_url, title } = await downloadMedia({ url: effectiveUrl, format: chosenFormat });
-      setFileUrl(file_url);
-      setLastTitle(title || effectiveUrl);
-      addToast('Download complete! File saved to browser downloads.');
+      const { file_url, title, format: resultFormat } = await downloadMedia({ url: effectiveUrl, format: chosenFormat });
+      updatePersistentState((prev) => ({
+        ...prev,
+        fileUrl: file_url,
+        lastTitle: title || effectiveUrl,
+        downloadedUrl: effectiveUrl,
+        downloadedFormat: resultFormat || chosenFormat,
+      }));
 
       // Automatically download the file to browser default location
       await downloadFileBlob(file_url, title || 'download', true);
-
+      addToast('Download ready. Check your browser downloads.');
       refreshData();
     } catch (error) {
       console.error('❌ Download error:', error);
@@ -241,8 +227,8 @@ export default function DownloadPage() {
     }
     try {
       await saveDownloadEntry({
-        url,
-        format,
+        url: downloadedUrl || url,
+        format: downloadedFormat || format,
         tags,
         fileUrl,
         title: lastTitle,
@@ -366,6 +352,11 @@ export default function DownloadPage() {
                     {downloadProgress > 0 && downloadProgress < 100 ? 'Downloading...' : 'Latest Download'}
                   </p>
                   <p className="theme-text-primary">{lastTitle || 'Untitled download'}</p>
+                  {resolvedFileUrl && (downloadedFormat === 'mp3' ? (
+                    <audio controls preload="metadata" src={resolvedFileUrl} className="w-full" />
+                  ) : (
+                    <video controls playsInline preload="metadata" src={resolvedFileUrl} className="max-h-96 w-full rounded-md bg-black" />
+                  ))}
 
                   {/* Download Progress Bar */}
                   {downloadProgress > 0 && (
@@ -528,6 +519,7 @@ export default function DownloadPage() {
                             setUrl(entry.url);
                             setFormat(entry.format);
                             setLastTitle(name);
+                            setFileUrl('');
                           }}
                         >
                           Use URL

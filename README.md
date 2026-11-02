@@ -43,7 +43,7 @@ The code has two API clients: `apiClient.js` uses local user/session identifiers
 | `npm run build` | Build the production application into `dist/` |
 | `npm run preview` | Preview the production build locally |
 
-There is currently no automated test or lint script in `package.json`.
+Run `node --test src/utils/mediaDownloads.test.js` for browser-download response regression checks. There is currently no test or lint script in `package.json`.
 
 ## Source layout
 
