@@ -1,117 +1,70 @@
 # Growth OS Frontend
 
-This repository contains the Growth OS frontend application, built with React, Vite, Tailwind CSS, and Firebase.
+React 18 application for the Growth OS content studio, built with Vite, Tailwind CSS, Firebase, and React Flow. It provides dashboards, media downloads, transcription, script editing, text-to-speech, a workspace, and visual workflows. Subscription screens integrate with RevenueCat and backend billing endpoints.
 
-> The backend services are maintained in a separate private repository and are not included here.
-
-## Project Overview
-
-Growth OS is a full-stack application composed of a public frontend (this repo) and a private backend service. The two parts work together to provide an end-to-end experience for users:
-
-- **Frontend (this repo):** Fast, responsive React app (Vite + Tailwind) handling UI, authentication (Firebase Auth), workflow visualization, and calls to backend APIs. Primary source files live under `frontend/src/`.
-- **Backend (private repo):** FastAPI (Uvicorn) services that implement the application API surface (transcription, text modification, TTS, workspace & workflows management, analytics, credits, etc.), subscription and payment logic (RevenueCat, Stripe), and server-side Firestore access via the `firebase-admin` SDK.
-- **Data & integrations:** Firebase Firestore is used for user profiles, workspace and workflow persistence; RevenueCat and Stripe manage subscriptions/payments; object/audio storage and third-party services (speech, TTS) are orchestrated by the backend.
-
-How they interact:
-
-- The frontend calls the backend API configured via `VITE_API_BASE_URL` (set in `frontend/.env`). Common API endpoints used by the UI are implemented in `frontend/src/lib/apiClient.js`.
-- Backend endpoints validate Firebase ID tokens, perform server-side processing, and update Firestore and third-party services as needed.
-
-Running locally:
-
-- Start the backend (private repository) and ensure its `VITE_API_BASE_URL` (or equivalent) is reachable at the value used in the frontend env.
-- Then run the frontend development server:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Notes for contributors:
-
-- This README focuses on the frontend; backend sources and deployment workflows are maintained in a private repository. Coordinate API or schema changes with the backend team and update `frontend/src/lib/apiClient.js` and the env docs when contracts change.
-
-## What’s included
-
-- `frontend/` - React app with Vite, Tailwind, Firebase integration, RevenueCat readiness, and glass-style UI components.
-- `frontend/package.json` - frontend dependencies and scripts.
-- `frontend/src/` - React source code, including Firebase helpers, routes, hooks, services, and UI components.
-- `FIREBASE_SETUP.md`, `SETUP_GUIDE.md`, `LAUNCH_GUIDE.md` - supporting docs for frontend integration and local launch.
-
-## Prerequisites
-
-- macOS/Linux/Windows
-- Node.js 16+ and npm
-- Firebase project with Firestore enabled
-- Optional: Stripe and RevenueCat for subscription flows
+The FastAPI backend lives in a separate repository and must run for API-backed features. Firebase handles browser authentication and Firestore access.
 
 ## Local setup
 
-1. Install frontend dependencies:
+Use Node.js 22 and npm. Run commands from **this repository's root** (the `frontend/` directory when both repositories sit inside `growth_os_app/`):
 
-```bash
-cd frontend
-npm install
+```sh
+npm ci
 ```
 
-2. Create a frontend environment file at `frontend/.env` and set your Firebase and API values:
+Create `.env` in that directory:
 
-```bash
-VITE_API_BASE_URL=http://localhost:8000
-VITE_FIREBASE_API_KEY=your_firebase_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-VITE_FIREBASE_APP_ID=your_firebase_app_id
+```dotenv
+VITE_API_BASE_URL=http://localhost:8001
 ```
 
-> The backend API URL is typically a local or private backend instance. Update `VITE_API_BASE_URL` to the correct backend endpoint.
+Start the backend separately on port 8001 using its README, then start the frontend:
 
-## Running the frontend
-
-```bash
-cd frontend
+```sh
 npm run dev
 ```
 
-Build for production:
+Open the URL printed by Vite, normally `http://localhost:5173`. Restart Vite after changing `.env`. Without `VITE_API_BASE_URL`, API clients fall back to `http://localhost:8000`; set it explicitly to avoid reaching another local application.
 
-```bash
-cd frontend
-npm run build
-```
+## Firebase and subscriptions
 
-Preview a production build:
+Firebase configuration currently lives directly in `src/firebase/firebaseConfig.js`. For your own Firebase project, update that configuration, enable the sign-in methods you use, configure Firestore rules, and authorize your frontend domain in Firebase Authentication. The current initializer does **not** read `VITE_FIREBASE_*` variables from `.env`.
 
-```bash
-cd frontend
-npm run preview
-```
+`src/services/revenueCat.js` contains the current RevenueCat sandbox integration. Review its configuration and backend billing setup before enabling purchases. Vite exposes every `VITE_*` value to the browser: use public client configuration only; private billing keys and service-account credentials belong on the backend.
 
-## Frontend features
+The code has two API clients: `apiClient.js` uses local user/session identifiers, while `apiClientFirebase.js` attaches Firebase tokens when available. The backend currently uses client-provided user IDs for attribution; signing in does not by itself establish authorization across every API route.
 
-- React 18 with Vite for fast development and build performance
-- Tailwind CSS for design and glass UI styling
-- Firebase authentication and Firestore integration
-- RevenueCat-ready subscription support
-- React Router DOM for client-side routing
-- React Flow for workflow visualization
+## Commands
 
-## Frontend structure
+| Command | Purpose |
+| --- | --- |
+| `npm ci` | Install dependencies from the committed lockfile |
+| `npm run dev` | Start Vite with hot reload |
+| `npm run build` | Build the production application into `dist/` |
+| `npm run preview` | Preview the production build locally |
 
-- `frontend/src/App.jsx` - main app entry point
-- `frontend/src/main.jsx` - React bootstrap file
-- `frontend/src/firebase/` - Firebase initialization and helpers
-- `frontend/src/components/` - reusable UI components
-- `frontend/src/hooks/` - custom React hooks
-- `frontend/src/pages/` - page views and routes
-- `frontend/src/services/` - API and integration services
+There is currently no automated test or lint script in `package.json`.
 
-## Notes
+## Source layout
 
-- This README is focused on the frontend app only.
-- Backend integration is handled in a separate private repository.
-- If you update frontend dependencies, run `npm install` from `frontend/`.
-- Use `FIREBASE_SETUP.md` and `SETUP_GUIDE.md` for configuration details.
+| Path | Purpose |
+| --- | --- |
+| `src/App.jsx`, `src/main.jsx` | Routes and application bootstrap |
+| `src/pages/` | Dashboard, downloads, transcription, TTS, workspace, workflows, pricing, and settings |
+| `src/components/` | Shared UI and workflow editor components |
+| `src/context/`, `src/hooks/` | Application state and reusable behavior |
+| `src/firebase/` | Firebase initialization, auth, and Firestore helpers |
+| `src/lib/apiClient.js`, `src/lib/apiClientFirebase.js` | Backend request clients |
+| `src/services/revenueCat.js` | Subscription integration |
+| `src/styles/`, `src/index.css` | Application styling |
+
+See [README-GLASS.md](README-GLASS.md) for the glass UI components.
+
+## Verify and troubleshoot
+
+- Check `http://localhost:8001/health` and `http://localhost:8001/openapi.json`. The schema title must be **Growth OS API**. Another app can return a healthy response while serving unrelated endpoints.
+- For failed requests, inspect the browser Network panel for the destination URL, HTTP status, and response. Confirm the API port matches `.env`, then restart Vite.
+- If Firebase sign-in fails, check the configured project, enabled providers, and authorized domain. For Firestore errors, inspect the project's access rules.
+- API-backed tools require the backend's provider keys and dependencies even if the frontend renders successfully.
+
+For deployment, set `VITE_API_BASE_URL` to the backend's HTTPS URL **before building**; Vite embeds it in the output. Configure the host to serve `index.html` for client-side routes, authorize the deployed domain in Firebase, and configure backend CORS for that origin. Keep `.env`, `node_modules/`, and `dist/` out of Git; commit dependency lockfiles.
